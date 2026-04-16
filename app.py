@@ -510,6 +510,7 @@ with st.sidebar:
     st.markdown("##### 🔑 OpenAI API Key")
     api_key_input = st.text_input(
         "key", type="password", value=config.OPENAI_API_KEY,
+        placeholder="Paste your API key and press Enter",
         help="Enables AI-powered responses. Without it, template mode is used.",
         label_visibility="collapsed",
     )
@@ -517,10 +518,11 @@ with st.sidebar:
         config.OPENAI_API_KEY = api_key_input
         os.environ["OPENAI_API_KEY"] = api_key_input
         st.session_state.agent = MainAgent()
+        st.rerun()
     if config.OPENAI_API_KEY:
         st.success("AI Mode Active", icon="✅")
     else:
-        st.info("Template Mode", icon="💡")
+        st.caption("Paste your key above and press **Enter** to activate AI mode.")
 
     st.markdown("---")
     st.markdown("##### 📊 Your Session")
