@@ -1,0 +1,294 @@
+{
+  "services": {
+    "mental_health": [
+      {
+        "name": "University Counselling Service",
+        "description": "Free, confidential counselling sessions with qualified professionals for students experiencing emotional or psychological difficulties.",
+        "contact": "counselling@university.ac.uk",
+        "phone": "0191 227 4366",
+        "location": "Student Wellbeing Centre, Room 201",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Book online via the Student Wellbeing Portal or drop in during office hours.",
+        "url": "https://www.university.ac.uk/counselling"
+      },
+      {
+        "name": "Mental Health Advisory Service",
+        "description": "Specialist support for students with diagnosed mental health conditions, including study support plans and reasonable adjustments.",
+        "contact": "mentalhealthadvisor@university.ac.uk",
+        "phone": "0191 227 4537",
+        "location": "Student Wellbeing Centre, Room 205",
+        "hours": "Monday-Friday 9:30-16:30",
+        "booking": "Email or call to arrange an appointment.",
+        "url": "https://www.university.ac.uk/mental-health"
+      },
+      {
+        "name": "Wellbeing Workshops",
+        "description": "Group workshops covering stress management, mindfulness, resilience building, and coping strategies.",
+        "contact": "wellbeing@university.ac.uk",
+        "phone": "0191 227 4366",
+        "location": "Various campus locations",
+        "hours": "Check the events calendar for schedules",
+        "booking": "Sign up via the Student Wellbeing Portal.",
+        "url": "https://www.university.ac.uk/wellbeing-workshops"
+      },
+      {
+        "name": "Nightline (Student Listening Service)",
+        "description": "Confidential, anonymous listening and emotional support service run by trained student volunteers during evening and night hours.",
+        "contact": "nightline@university.ac.uk",
+        "phone": "0191 227 4444",
+        "location": "Available by phone, email, and instant messaging",
+        "hours": "20:00-08:00 during term time",
+        "booking": "No appointment needed — call, email, or message anytime during hours.",
+        "url": "https://www.university.ac.uk/nightline"
+      },
+      {
+        "name": "Togetherall (Online Mental Health Community)",
+        "description": "Free 24/7 online peer support community monitored by trained professionals. Includes self-guided courses on anxiety, depression, and sleep.",
+        "contact": "Access via university portal",
+        "phone": null,
+        "location": "Online platform",
+        "hours": "24/7",
+        "booking": "Register with your university email at togetherall.com.",
+        "url": "https://togetherall.com"
+      }
+    ],
+    "financial": [
+      {
+        "name": "Student Financial Support Service",
+        "description": "Advice on budgeting, managing debt, accessing emergency funds, and understanding student finance entitlements.",
+        "contact": "financialsupport@university.ac.uk",
+        "phone": "0191 227 4550",
+        "location": "Student Support Centre, Ground Floor",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Book via the Student Hub or drop in.",
+        "url": "https://www.university.ac.uk/financial-support"
+      },
+      {
+        "name": "Hardship Fund",
+        "description": "Emergency financial assistance for students facing unexpected financial difficulties. Grants available for essential living costs.",
+        "contact": "hardshipfund@university.ac.uk",
+        "phone": "0191 227 4550",
+        "location": "Student Support Centre",
+        "hours": "Applications processed within 5 working days",
+        "booking": "Apply online through the Student Hub portal.",
+        "url": "https://www.university.ac.uk/hardship-fund"
+      },
+      {
+        "name": "Scholarships & Bursaries Office",
+        "description": "Information on available scholarships, bursaries, and grants for current students based on financial need, academic merit, or specific criteria.",
+        "contact": "scholarships@university.ac.uk",
+        "phone": "0191 227 4600",
+        "location": "Student Support Centre, Room 102",
+        "hours": "Monday-Friday 10:00-16:00",
+        "booking": "Email for an appointment or check eligibility online.",
+        "url": "https://www.university.ac.uk/scholarships"
+      },
+      {
+        "name": "Careers & Employment Service",
+        "description": "Help finding part-time work, internships, and graduate employment. CV workshops, interview preparation, and job board access.",
+        "contact": "careers@university.ac.uk",
+        "phone": "0191 227 4610",
+        "location": "Careers Centre, Library Building",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Book a 1-to-1 appointment online or attend drop-in sessions.",
+        "url": "https://www.university.ac.uk/careers"
+      }
+    ],
+    "academic": [
+      {
+        "name": "Study Skills Support",
+        "description": "One-to-one and group support for academic writing, referencing, time management, revision techniques, and exam preparation.",
+        "contact": "studyskills@university.ac.uk",
+        "phone": "0191 227 4500",
+        "location": "Library Learning Hub, Level 2",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Book online via the Library website or drop in.",
+        "url": "https://www.university.ac.uk/study-skills"
+      },
+      {
+        "name": "Academic Personal Tutor",
+        "description": "Your assigned academic tutor provides guidance on academic progress, module choices, and pastoral support.",
+        "contact": "Check your programme page for tutor details",
+        "phone": null,
+        "location": "Department offices",
+        "hours": "Office hours vary by tutor",
+        "booking": "Email your personal tutor directly or book via the department system.",
+        "url": "https://www.university.ac.uk/personal-tutors"
+      },
+      {
+        "name": "Mitigating Circumstances & Extensions",
+        "description": "Apply for extensions or mitigating circumstances if personal issues are affecting your academic work. Covers illness, bereavement, and other unforeseen events.",
+        "contact": "mitigating@university.ac.uk",
+        "phone": "0191 227 4500",
+        "location": "Student Support Centre",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Submit your application with evidence through the Student Hub.",
+        "url": "https://www.university.ac.uk/mitigating-circumstances"
+      },
+      {
+        "name": "Disability & Learning Support (SpLD)",
+        "description": "Support for students with dyslexia, ADHD, autism spectrum conditions, and other specific learning differences. Includes DSA applications and exam adjustments.",
+        "contact": "disability@university.ac.uk",
+        "phone": "0191 227 4530",
+        "location": "Student Wellbeing Centre, Room 210",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Email or call to register and arrange a needs assessment.",
+        "url": "https://www.university.ac.uk/disability-support"
+      },
+      {
+        "name": "Library & Research Support",
+        "description": "Help with finding resources, using databases, referencing tools, and research methodology.",
+        "contact": "library@university.ac.uk",
+        "phone": "0191 227 4136",
+        "location": "University Library, Information Desk",
+        "hours": "Mon-Fri 8:00-21:00, Sat-Sun 10:00-18:00",
+        "booking": "Drop in at the Information Desk or book a research consultation.",
+        "url": "https://www.university.ac.uk/library"
+      }
+    ],
+    "housing": [
+      {
+        "name": "Accommodation Office",
+        "description": "Help with university halls of residence, room allocation, transfers, and reporting maintenance issues in university-managed accommodation.",
+        "contact": "accommodation@university.ac.uk",
+        "phone": "0191 227 4444",
+        "location": "Student Services Building, Ground Floor",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Drop in or email for an appointment.",
+        "url": "https://www.university.ac.uk/accommodation"
+      },
+      {
+        "name": "Private Housing Advice Service",
+        "description": "Guidance on finding private rented accommodation, understanding tenancy agreements, resolving disputes with landlords, and knowing your rights as a tenant.",
+        "contact": "housingadvice@university.ac.uk",
+        "phone": "0191 227 4555",
+        "location": "Student Support Centre, Room 105",
+        "hours": "Monday-Friday 10:00-16:00",
+        "booking": "Email or call for a housing advice appointment.",
+        "url": "https://www.university.ac.uk/housing-advice"
+      },
+      {
+        "name": "Students' Union Advice Service (Housing)",
+        "description": "Independent, impartial advice on housing issues including deposit disputes, disrepair, and landlord conflicts.",
+        "contact": "suadvice@university.ac.uk",
+        "phone": "0191 227 4777",
+        "location": "Students' Union Building, First Floor",
+        "hours": "Monday-Friday 10:00-16:00",
+        "booking": "Book via the SU website or drop in.",
+        "url": "https://www.university-su.ac.uk/advice"
+      },
+      {
+        "name": "Emergency Accommodation",
+        "description": "Short-term emergency housing for students who find themselves without accommodation due to unforeseen circumstances.",
+        "contact": "emergencyhousing@university.ac.uk",
+        "phone": "0191 227 4444",
+        "location": "Contact Security (out of hours) or Student Support Centre",
+        "hours": "24/7 via Security; office hours via Student Support",
+        "booking": "Call immediately if you are in urgent need of housing.",
+        "url": "https://www.university.ac.uk/emergency-accommodation"
+      }
+    ],
+    "general_wellbeing": [
+      {
+        "name": "Student Wellbeing Team",
+        "description": "Holistic support for students facing personal challenges. Provides a safe space to talk and connects you with specialist services.",
+        "contact": "wellbeing@university.ac.uk",
+        "phone": "0191 227 4366",
+        "location": "Student Wellbeing Centre",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Drop in, email, or book online.",
+        "url": "https://www.university.ac.uk/wellbeing"
+      },
+      {
+        "name": "International Student Support",
+        "description": "Dedicated support for international students including visa advice, cultural adjustment, and connecting with the international student community.",
+        "contact": "internationalsupport@university.ac.uk",
+        "phone": "0191 227 4700",
+        "location": "International Office, Main Building",
+        "hours": "Monday-Friday 9:00-17:00",
+        "booking": "Email or book via the International Student Hub.",
+        "url": "https://www.university.ac.uk/international-support"
+      },
+      {
+        "name": "Equality, Diversity & Inclusion Service",
+        "description": "Support for students experiencing discrimination, harassment, or hate incidents. Safe and confidential reporting and guidance.",
+        "contact": "edi@university.ac.uk",
+        "phone": "0191 227 4800",
+        "location": "Student Support Centre, Room 110",
+        "hours": "Monday-Friday 9:30-16:30",
+        "booking": "Email to arrange a confidential meeting.",
+        "url": "https://www.university.ac.uk/edi"
+      },
+      {
+        "name": "University Health Centre (GP)",
+        "description": "On-campus medical practice for registered students. Covers general health, contraception, vaccinations, and referrals to specialists.",
+        "contact": "healthcentre@university.ac.uk",
+        "phone": "0191 227 4900",
+        "location": "Health Centre, Campus East",
+        "hours": "Monday-Friday 8:30-18:00",
+        "booking": "Call or book appointments online via the NHS app.",
+        "url": "https://www.university.ac.uk/health-centre"
+      },
+      {
+        "name": "Sport & Fitness Centre",
+        "description": "Access to gym, sports clubs, fitness classes, and recreational activities. Exercise is proven to improve mental health and wellbeing.",
+        "contact": "sport@university.ac.uk",
+        "phone": "0191 227 4950",
+        "location": "Sport Central",
+        "hours": "Monday-Friday 7:00-22:00, Weekends 9:00-18:00",
+        "booking": "Membership included in your student fees. Book classes online.",
+        "url": "https://www.university.ac.uk/sport"
+      }
+    ]
+  },
+  "crisis_resources": [
+    {
+      "name": "Samaritans",
+      "description": "24/7 confidential emotional support for anyone in distress or despair.",
+      "phone": "116 123",
+      "available": "24/7, 365 days a year"
+    },
+    {
+      "name": "Crisis Text Line (Shout)",
+      "description": "Free, confidential crisis support via text message.",
+      "phone": "Text SHOUT to 85258",
+      "available": "24/7"
+    },
+    {
+      "name": "NHS Emergency",
+      "description": "For immediate medical emergencies.",
+      "phone": "999",
+      "available": "24/7"
+    },
+    {
+      "name": "NHS Non-Emergency",
+      "description": "Health advice and information.",
+      "phone": "111",
+      "available": "24/7"
+    },
+    {
+      "name": "University Security (Emergency)",
+      "description": "On-campus emergency assistance and support.",
+      "phone": "0191 227 4500",
+      "available": "24/7"
+    }
+  ],
+  "external_resources": {
+    "finance": {
+      "job_platforms": [
+        {"name": "Reed.co.uk", "url": "https://www.reed.co.uk", "description": "UK job search engine for part-time and graduate roles."},
+        {"name": "LinkedIn Jobs", "url": "https://www.linkedin.com/jobs", "description": "Professional networking and job search platform."},
+        {"name": "Indeed", "url": "https://www.indeed.co.uk", "description": "Comprehensive job board with student and part-time filters."},
+        {"name": "Briefcase", "url": "https://www.briefcase.com", "description": "Graduate career platform connecting students with employers."}
+      ]
+    },
+    "housing": {
+      "platforms": [
+        {"name": "Rightmove", "url": "https://www.rightmove.co.uk", "description": "UK's largest property website for renting and buying."},
+        {"name": "SpareRoom", "url": "https://www.spareroom.co.uk", "description": "Find rooms to rent and flatmates."},
+        {"name": "Amber Student", "url": "https://amberstudent.com", "description": "Student accommodation booking platform."},
+        {"name": "Home.co.uk", "url": "https://www.home.co.uk", "description": "Property search and rental listings."}
+      ]
+    }
+  }
+}
