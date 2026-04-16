@@ -509,20 +509,29 @@ with st.sidebar:
 
     st.markdown("##### 🔑 OpenAI API Key")
     api_key_input = st.text_input(
-        "key", type="password", value=config.OPENAI_API_KEY,
-        placeholder="Paste your API key and press Enter",
+        "key", type="password",
+        placeholder="Paste your API key here",
         help="Enables AI-powered responses. Without it, template mode is used.",
         label_visibility="collapsed",
+        key="api_key_field",
     )
-    if api_key_input and api_key_input != config.OPENAI_API_KEY:
-        config.OPENAI_API_KEY = api_key_input
-        os.environ["OPENAI_API_KEY"] = api_key_input
+    if st.button("Activate AI ✅", use_container_width=True, type="primary", key="activate_btn"):
+        if api_key_input and api_key_input.strip():
+            config.OPENAI_API_KEY = api_key_input.strip()
+            os.environ["OPENAI_API_KEY"] = api_key_input.strip()
+            st.session_state.agent = MainAgent()
+            st.rerun()
+        else:
+            st.warning("Please paste a key first.", icon="⚠️")
+    # Also handle if key was already set previously
+    if not config.OPENAI_API_KEY and api_key_input and api_key_input != config.OPENAI_API_KEY:
+        config.OPENAI_API_KEY = api_key_input.strip()
+        os.environ["OPENAI_API_KEY"] = api_key_input.strip()
         st.session_state.agent = MainAgent()
-        st.rerun()
     if config.OPENAI_API_KEY:
         st.success("AI Mode Active", icon="✅")
     else:
-        st.caption("Paste your key above and press **Enter** to activate AI mode.")
+        st.caption("Paste your key and click **Activate AI** to enable.")
 
     st.markdown("---")
     st.markdown("##### 📊 Your Session")
