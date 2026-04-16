@@ -4,9 +4,9 @@ import logging
 
 from openai import OpenAI
 
+import config
 from config import (
     CATEGORY_LABELS,
-    OPENAI_API_KEY,
     OPENAI_RESPONSE_MODEL,
     SUB_AGENT_PROMPTS,
     SYSTEM_PROMPT,
@@ -113,7 +113,7 @@ def generate_response_openai_stream(
     messages.extend(conversation_history[-20:])
     messages.append({"role": "user", "content": user_message})
 
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
     stream = client.chat.completions.create(
         model=OPENAI_RESPONSE_MODEL,
         messages=messages,
@@ -145,7 +145,7 @@ def generate_response_openai(
     messages.extend(conversation_history[-20:])
     messages.append({"role": "user", "content": user_message})
 
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
     response = client.chat.completions.create(
         model=OPENAI_RESPONSE_MODEL,
         messages=messages,
@@ -222,7 +222,7 @@ def generate_response(
     summary: str = "",
 ) -> str:
     """Generate a complete response (non-streaming). Falls back to templates if no API key."""
-    if OPENAI_API_KEY:
+    if config.OPENAI_API_KEY:
         try:
             return generate_response_openai(
                 user_message, categories, is_crisis, sentiment, summary, conversation_history
@@ -244,7 +244,7 @@ def generate_response_stream(
     Generate a streaming response. Yields text chunks when OpenAI is available,
     otherwise yields the full fallback response as a single chunk.
     """
-    if OPENAI_API_KEY:
+    if config.OPENAI_API_KEY:
         try:
             yield from generate_response_openai_stream(
                 user_message, categories, is_crisis, sentiment, summary, conversation_history

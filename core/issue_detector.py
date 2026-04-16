@@ -5,12 +5,12 @@ import logging
 
 from openai import OpenAI
 
+import config
 from config import (
     CATEGORY_KEYWORDS,
     CLASSIFY_TOOLS,
     CLASSIFIER_SYSTEM_PROMPT,
     ISSUE_CATEGORIES,
-    OPENAI_API_KEY,
     OPENAI_CLASSIFIER_MODEL,
 )
 
@@ -24,7 +24,7 @@ def classify_issue_openai(user_input: str) -> dict:
     Use OpenAI function calling to classify the student's concern.
     Returns a structured dict with categories, is_crisis, sentiment, and summary.
     """
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
     response = client.chat.completions.create(
         model=OPENAI_CLASSIFIER_MODEL,
         messages=[
@@ -95,7 +95,7 @@ def classify_issue(user_input: str) -> dict:
     Classify the student's message. Uses OpenAI if API key is set, else keywords.
     Returns: {"categories": [...], "is_crisis": bool, "sentiment": str, "summary": str}
     """
-    if OPENAI_API_KEY:
+    if config.OPENAI_API_KEY:
         try:
             return classify_issue_openai(user_input)
         except Exception as e:
