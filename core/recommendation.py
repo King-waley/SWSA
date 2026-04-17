@@ -89,3 +89,4 @@ def format_external_context(resources: dict) -> str:
             lines.append(f"- **{item['name']}**: {item['description']}")
         lines.append("")
     return "\n".join(lines)
+# Recommendation Engine

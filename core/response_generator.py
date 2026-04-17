@@ -254,3 +254,4 @@ def generate_response_stream(
             logger.warning("OpenAI stream failed, using fallback: %s", e)
     # Fallback: yield full response as one chunk
     yield generate_response_fallback(user_message, categories, is_crisis)
+# Response Generation Module

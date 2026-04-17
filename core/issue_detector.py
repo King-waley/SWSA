@@ -101,3 +101,4 @@ def classify_issue(user_input: str) -> dict:
         except Exception as e:
             logger.warning("OpenAI classification failed, using keyword fallback: %s", e)
     return classify_issue_keyword(user_input)
+# AI Classification & Response Pipeline
