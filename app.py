@@ -607,6 +607,16 @@ def render_crisis():
     )
 
 
+# ── Scroll to top on page load ──────────────────────────────────────
+st.markdown("""
+<script>
+    window.scrollTo({top: 0, behavior: 'instant'});
+    // Also try after a short delay for Streamlit's lazy rendering
+    setTimeout(function(){ window.scrollTo({top: 0, behavior: 'instant'}); }, 100);
+    setTimeout(function(){ window.scrollTo({top: 0, behavior: 'instant'}); }, 300);
+</script>
+""", unsafe_allow_html=True)
+
 # ═══════════════════════════════════════════════════════════════════
 #  HERO LOGO — S.W.S.A.
 # ═══════════════════════════════════════════════════════════════════
@@ -643,17 +653,19 @@ if not st.session_state.started:
         unsafe_allow_html=True,
     )
 
-    # ── Mood Check-In ───────────────────────────────────────
-    st.markdown('<div class="glass-card"><h4>How are you feeling right now?</h4>', unsafe_allow_html=True)
-    mood_cols = st.columns(5)
-    moods = [("😊", "Good"), ("😐", "Okay"), ("😟", "Worried"), ("😢", "Upset"), ("😰", "Struggling")]
-    for i, (emoji, label) in enumerate(moods):
-        with mood_cols[i]:
-            if st.button(f"{emoji}\n{label}", key=f"mood_{label}", use_container_width=True):
-                st.session_state.mood = label
-                st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+    # ── Step 1: Mood Check-In (only if not answered yet) ────
+    if not st.session_state.mood:
+        st.markdown('<div class="glass-card"><h4>How are you feeling right now?</h4>', unsafe_allow_html=True)
+        mood_cols = st.columns(5)
+        moods = [("😊", "Good"), ("😐", "Okay"), ("😟", "Worried"), ("😢", "Upset"), ("😰", "Struggling")]
+        for i, (emoji, label) in enumerate(moods):
+            with mood_cols[i]:
+                if st.button(f"{emoji}\n{label}", key=f"mood_{label}", use_container_width=True):
+                    st.session_state.mood = label
+                    st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── Step 2: Show mood response + topic cards (after mood selected) ──
     if st.session_state.mood:
         mood_msgs = {
             "Good":      ("😊", "Great to hear! Feel free to explore services or ask anything."),
@@ -668,37 +680,47 @@ if not st.session_state.started:
             unsafe_allow_html=True,
         )
 
-    # ── Quick Action Cards ──────────────────────────────────
-    st.markdown('<div class="glass-card"><h4>What do you need help with?</h4>', unsafe_allow_html=True)
+        # ── Quick Action Cards (only after mood is selected) ──
+        st.markdown('<div class="glass-card"><h4>What do you need help with?</h4>', unsafe_allow_html=True)
 
-    actions = [
-        ("💚", "Mental Health",    "Stress, anxiety, loneliness, burnout",    "I'm feeling really stressed and anxious lately"),
-        ("💰", "Money Worries",    "Rent, debt, budgeting, jobs",            "I'm struggling financially and can't afford my expenses"),
-        ("📚", "Academic Help",    "Exams, deadlines, essays, extensions",   "I'm falling behind on my coursework and need help"),
-        ("🏠", "Housing Issues",   "Landlord, repairs, finding a flat",      "I'm having problems with my accommodation"),
-        ("🌟", "General Wellbeing","Health, relationships, fitting in",      "I feel isolated and need someone to talk to"),
-        ("🆘", "Urgent Support",   "Crisis help, immediate assistance",      "I need urgent help right now"),
-    ]
+        actions = [
+            ("💚", "Mental Health",    "Stress, anxiety, loneliness, burnout",    "I'm feeling really stressed and anxious lately"),
+            ("💰", "Money Worries",    "Rent, debt, budgeting, jobs",            "I'm struggling financially and can't afford my expenses"),
+            ("📚", "Academic Help",    "Exams, deadlines, essays, extensions",   "I'm falling behind on my coursework and need help"),
+            ("🏠", "Housing Issues",   "Landlord, repairs, finding a flat",      "I'm having problems with my accommodation"),
+            ("🌟", "General Wellbeing","Health, relationships, fitting in",      "I feel isolated and need someone to talk to"),
+            ("🆘", "Urgent Support",   "Crisis help, immediate assistance",      "I need urgent help right now"),
+        ]
 
-    r1 = st.columns(3)
-    r2 = st.columns(3)
-    cols = r1 + r2
-    for i, (icon, title, desc, prompt) in enumerate(actions):
-        with cols[i]:
-            if st.button(f"{icon}\n**{title}**\n{desc}", key=f"qa_{title}", use_container_width=True):
-                st.session_state.started = True
-                st.session_state.pending_input = prompt
-                mood_note = f" You mentioned feeling **{st.session_state.mood.lower()}**." if st.session_state.mood else ""
-                welcome = (
-                    f"Welcome to **S.W.S.A.** 🛡️{mood_note} "
-                    f"Let me look into **{title}** for you."
-                )
-                st.session_state.messages = [{"role": "assistant", "content": welcome, "metadata": None}]
-                st.rerun()
+        r1 = st.columns(3)
+        r2 = st.columns(3)
+        cols = r1 + r2
+        for i, (icon, title, desc, prompt) in enumerate(actions):
+            with cols[i]:
+                if st.button(f"{icon}\n**{title}**\n{desc}", key=f"qa_{title}", use_container_width=True):
+                    st.session_state.started = True
+                    st.session_state.pending_input = prompt
+                    mood_note = f" You mentioned feeling **{st.session_state.mood.lower()}**." if st.session_state.mood else ""
+                    welcome = (
+                        f"Welcome to **S.W.S.A.** 🛡️{mood_note} "
+                        f"Let me look into **{title}** for you."
+                    )
+                    st.session_state.messages = [{"role": "assistant", "content": welcome, "metadata": None}]
+                    st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── Features Strip ──────────────────────────────────────
+        # Chat input on landing page
+        user_input_landing = st.chat_input("Or just type what's on your mind...")
+        if user_input_landing:
+            st.session_state.started = True
+            mood_note = f" You mentioned feeling **{st.session_state.mood.lower()}**." if st.session_state.mood else ""
+            welcome = f"Welcome to **S.W.S.A.** 🛡️{mood_note} Let me look into your concern."
+            st.session_state.messages = [{"role": "assistant", "content": welcome, "metadata": None}]
+            st.session_state.pending_input = user_input_landing
+            st.rerun()
+
+    # ── Features Strip (always visible) ─────────────────────
     st.markdown('<div class="sep"></div>', unsafe_allow_html=True)
     f1, f2, f3, f4 = st.columns(4)
     with f1:
@@ -716,16 +738,6 @@ if not st.session_state.started:
         '<strong>S.W.S.A.</strong> — Student Welfare Support Agent</div>',
         unsafe_allow_html=True,
     )
-
-    # Chat input on landing page
-    user_input_landing = st.chat_input("Or just type what's on your mind...")
-    if user_input_landing:
-        st.session_state.started = True
-        mood_note = f" You mentioned feeling **{st.session_state.mood.lower()}**." if st.session_state.mood else ""
-        welcome = f"Welcome to **S.W.S.A.** 🛡️{mood_note} Let me look into your concern."
-        st.session_state.messages = [{"role": "assistant", "content": welcome, "metadata": None}]
-        st.session_state.pending_input = user_input_landing
-        st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════════
