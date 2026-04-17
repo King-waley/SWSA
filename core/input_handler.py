@@ -1,4 +1,4 @@
-"""Input handling module — preprocesses and validates student messages."""
+"""Input handling and validation."""
 
 import re
 
@@ -40,4 +40,3 @@ def detect_crisis(user_input: str) -> bool:
         if re.search(pattern, text_lower):
             return True
     return False
-# Crisis Detection & Input Validation

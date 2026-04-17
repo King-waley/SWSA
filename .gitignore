@@ -7,3 +7,6 @@ venv/
 dist/
 build/
 .streamlit/
+*.pptx
+*.docx
+create_*.py

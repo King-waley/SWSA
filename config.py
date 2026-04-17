@@ -1,4 +1,4 @@
-"""Configuration for the AI Student Welfare Support Agent."""
+"""App configuration and constants."""
 
 import os
 from dotenv import load_dotenv
@@ -177,4 +177,3 @@ SUB_AGENT_PROMPTS = {
         "Be warm and encouraging about building a support network."
     ),
 }
-# S.W.S.A. Project Setup

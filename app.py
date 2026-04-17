@@ -1,7 +1,4 @@
-"""
-S.W.S.A. — Student Welfare Support Agent
-AI Student Welfare Support Agent — Streamlit Web Application.
-"""
+"""S.W.S.A. Streamlit web application."""
 
 import sys
 import os
@@ -13,7 +10,6 @@ import config
 from config import CATEGORY_LABELS
 from agents.main_agent import MainAgent
 
-# ── Page Config ─────────────────────────────────────────────────────
 st.set_page_config(
     page_title="S.W.S.A. — Student Welfare Support Agent",
     page_icon="🛡️",
@@ -21,9 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ═══════════════════════════════════════════════════════════════════
 #  PREMIUM CSS
-# ═══════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
 /* ── Fonts ─────────────────────────────────────────────────── */
@@ -479,9 +473,7 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════════════════
 #  SESSION STATE
-# ═══════════════════════════════════════════════════════════════════
 if "agent" not in st.session_state:
     st.session_state.agent = MainAgent()
 if "messages" not in st.session_state:
@@ -498,9 +490,7 @@ if "feedback_given" not in st.session_state:
     st.session_state.feedback_given = set()
 
 
-# ═══════════════════════════════════════════════════════════════════
 #  SIDEBAR
-# ═══════════════════════════════════════════════════════════════════
 with st.sidebar:
     # Mini SWSA logo
     st.markdown("""
@@ -580,9 +570,7 @@ with st.sidebar:
     st.caption("⚠️ S.W.S.A. provides guidance only. Not a substitute for professional help. In emergencies call 999.")
 
 
-# ═══════════════════════════════════════════════════════════════════
 #  HELPERS
-# ═══════════════════════════════════════════════════════════════════
 CAT_BADGE_ICONS = {
     "mental_health": "💚", "financial": "💰",
     "academic": "📚", "housing": "🏠", "general_wellbeing": "🌟",
@@ -617,7 +605,6 @@ def render_crisis():
     )
 
 
-# ── Scroll to top on page load ──────────────────────────────────────
 st.markdown(
     '<div id="swsa-top"></div>'
     '<img src="" onerror="'
@@ -629,9 +616,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ═══════════════════════════════════════════════════════════════════
 #  HERO LOGO — S.W.S.A.
-# ═══════════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="swsa-hero">
     <div class="swsa-logo-row">
@@ -654,9 +639,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════════════════
 #  LANDING PAGE
-# ═══════════════════════════════════════════════════════════════════
 if not st.session_state.started:
 
     st.markdown(
@@ -752,9 +735,7 @@ if not st.session_state.started:
     )
 
 
-# ═══════════════════════════════════════════════════════════════════
 #  CHAT MODE
-# ═══════════════════════════════════════════════════════════════════
 else:
 
     # ── Render history ──────────────────────────────────────
@@ -827,4 +808,3 @@ else:
             "role": "assistant", "content": full_response, "metadata": metadata,
         })
         st.rerun()
-# S.W.S.A. Frontend Application

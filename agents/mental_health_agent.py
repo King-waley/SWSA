@@ -1,4 +1,4 @@
-"""Mental Health Sub-Agent — handles mental health related concerns."""
+"""Mental health sub-agent."""
 
 from core.recommendation import get_crisis_resources, get_services_for_categories
 

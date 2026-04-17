@@ -1,4 +1,4 @@
-"""Financial Aid Sub-Agent — handles financial concerns and support."""
+"""Financial aid sub-agent."""
 
 from core.recommendation import get_external_resources, get_services_for_categories
 

@@ -1,4 +1,4 @@
-"""Support Advisor Sub-Agent — handles general wellbeing and cross-cutting concerns."""
+"""General wellbeing sub-agent."""
 
 from core.recommendation import get_services_for_categories
 

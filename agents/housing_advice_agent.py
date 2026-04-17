@@ -1,4 +1,4 @@
-"""Housing Advice Sub-Agent — handles accommodation and housing concerns."""
+"""Housing advice sub-agent."""
 
 from core.recommendation import get_external_resources, get_services_for_categories
 

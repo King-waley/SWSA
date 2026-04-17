@@ -1,4 +1,4 @@
-"""Recommendation engine — retrieves relevant services from the knowledge base."""
+"""Service recommendation engine."""
 
 import json
 import os
@@ -89,4 +89,3 @@ def format_external_context(resources: dict) -> str:
             lines.append(f"- **{item['name']}**: {item['description']}")
         lines.append("")
     return "\n".join(lines)
-# Recommendation Engine

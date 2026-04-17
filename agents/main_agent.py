@@ -1,4 +1,4 @@
-"""Main Orchestrator Agent — routes student concerns to appropriate sub-agents."""
+"""Main agent that routes queries to sub-agents."""
 
 from agents.academic_support_agent import AcademicSupportAgent
 from agents.financial_aid_agent import FinancialAidAgent
@@ -154,4 +154,3 @@ class MainAgent:
         full_response = "".join(full_response_parts)
         self.conversation_history.append({"role": "user", "content": user_input})
         self.conversation_history.append({"role": "assistant", "content": full_response})
-# Main Orchestrator Agent

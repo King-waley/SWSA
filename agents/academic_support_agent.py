@@ -1,4 +1,4 @@
-"""Academic Support Sub-Agent — handles academic concerns and study issues."""
+"""Academic support sub-agent."""
 
 from core.recommendation import get_services_for_categories
 

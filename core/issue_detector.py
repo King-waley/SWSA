@@ -1,4 +1,4 @@
-"""Issue detection module — classifies student concerns using OpenAI or keyword fallback."""
+"""Issue classification module."""
 
 import json
 import logging
@@ -17,7 +17,6 @@ from config import (
 logger = logging.getLogger(__name__)
 
 
-# ── OpenAI-powered classification ──────────────────────────────────
 
 def classify_issue_openai(user_input: str) -> dict:
     """
@@ -50,7 +49,6 @@ def classify_issue_openai(user_input: str) -> dict:
     return result
 
 
-# ── Keyword-based fallback classification ──────────────────────────
 
 def detect_issues_keyword(user_input: str) -> dict[str, float]:
     """Score each category based on keyword matches. Returns {category: score}."""
@@ -88,7 +86,6 @@ def classify_issue_keyword(user_input: str) -> dict:
     }
 
 
-# ── Main entry point ───────────────────────────────────────────────
 
 def classify_issue(user_input: str) -> dict:
     """
@@ -101,4 +98,3 @@ def classify_issue(user_input: str) -> dict:
         except Exception as e:
             logger.warning("OpenAI classification failed, using keyword fallback: %s", e)
     return classify_issue_keyword(user_input)
-# AI Classification & Response Pipeline

@@ -1,4 +1,4 @@
-"""Response generation module — produces responses using OpenAI (streaming) or fallback."""
+"""Response generation module."""
 
 import logging
 
@@ -93,7 +93,6 @@ def _build_system_message(
     )
 
 
-# ── OpenAI streaming response ─────────────────────────────────────
 
 def generate_response_openai_stream(
     user_message: str,
@@ -128,7 +127,6 @@ def generate_response_openai_stream(
             yield delta.content
 
 
-# ── OpenAI non-streaming response ─────────────────────────────────
 
 def generate_response_openai(
     user_message: str,
@@ -155,7 +153,6 @@ def generate_response_openai(
     return response.choices[0].message.content
 
 
-# ── Template-based fallback ────────────────────────────────────────
 
 def generate_response_fallback(
     user_message: str,
@@ -211,7 +208,6 @@ def generate_response_fallback(
     return "\n".join(parts)
 
 
-# ── Main entry points ─────────────────────────────────────────────
 
 def generate_response(
     user_message: str,
@@ -254,4 +250,3 @@ def generate_response_stream(
             logger.warning("OpenAI stream failed, using fallback: %s", e)
     # Fallback: yield full response as one chunk
     yield generate_response_fallback(user_message, categories, is_crisis)
-# Response Generation Module
