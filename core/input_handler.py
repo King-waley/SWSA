@@ -40,3 +40,4 @@ def detect_crisis(user_input: str) -> bool:
         if re.search(pattern, text_lower):
             return True
     return False
+# Crisis Detection & Input Validation
