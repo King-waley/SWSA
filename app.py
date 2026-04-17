@@ -618,14 +618,16 @@ def render_crisis():
 
 
 # ── Scroll to top on page load ──────────────────────────────────────
-st.markdown("""
-<script>
-    window.scrollTo({top: 0, behavior: 'instant'});
-    // Also try after a short delay for Streamlit's lazy rendering
-    setTimeout(function(){ window.scrollTo({top: 0, behavior: 'instant'}); }, 100);
-    setTimeout(function(){ window.scrollTo({top: 0, behavior: 'instant'}); }, 300);
-</script>
-""", unsafe_allow_html=True)
+st.markdown(
+    '<div id="swsa-top"></div>'
+    '<img src="" onerror="'
+    "var t=document.getElementById(\'swsa-top\');"
+    "if(t){t.scrollIntoView({behavior:\'instant\'});}"
+    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\'});}},150);"
+    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\'});}},400);"
+    '" style="display:none">',
+    unsafe_allow_html=True,
+)
 
 # ═══════════════════════════════════════════════════════════════════
 #  HERO LOGO — S.W.S.A.
