@@ -827,3 +827,4 @@ else:
             "role": "assistant", "content": full_response, "metadata": metadata,
         })
         st.rerun()
+# S.W.S.A. Frontend Application
