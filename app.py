@@ -311,6 +311,14 @@ div[data-testid="stChatMessage"] {
     margin-bottom: 0.6rem !important;
     animation: msgIn 0.4s ease-out;
     background: #fff !important;
+    color: #1E293B !important;
+}
+div[data-testid="stChatMessage"] p,
+div[data-testid="stChatMessage"] li,
+div[data-testid="stChatMessage"] span:not(.cat-badge):not(.sent-badge),
+div[data-testid="stChatMessage"] strong,
+div[data-testid="stChatMessage"] a {
+    color: #1E293B !important;
 }
 @keyframes msgIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 div[data-testid="stChatMessage"]:has(.stMarkdown) { line-height: 1.65; }
@@ -373,14 +381,16 @@ div[data-testid="stChatInput"] textarea {
 
 /* Chat messages */
 [data-theme="dark"] div[data-testid="stChatMessage"] {
-    background: rgba(30,41,59,0.70) !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
+    background: #1E293B !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    color: #E2E8F0 !important;
 }
 [data-theme="dark"] div[data-testid="stChatMessage"] p,
 [data-theme="dark"] div[data-testid="stChatMessage"] li,
-[data-theme="dark"] div[data-testid="stChatMessage"] span,
-[data-theme="dark"] div[data-testid="stChatMessage"] strong {
+[data-theme="dark"] div[data-testid="stChatMessage"] span:not(.cat-badge):not(.sent-badge),
+[data-theme="dark"] div[data-testid="stChatMessage"] strong,
+[data-theme="dark"] div[data-testid="stChatMessage"] a {
     color: #E2E8F0 !important;
 }
 
