@@ -59,6 +59,9 @@ class MentalHealthAgent:
     category = "mental_health"
     label = "Mental Health Sub-Agent"
 
+    def __init__(self):
+        self.last_error: str | None = None
+
     def _build_system_message(self, is_crisis: bool, sentiment: str, summary: str) -> str:
         sub_prompt = SUB_AGENT_PROMPTS[self.category]
         services_ctx = format_services_context(get_services_for_categories([self.category]))
@@ -95,13 +98,17 @@ class MentalHealthAgent:
         summary: str = "",
     ):
         """Stream a ChatGPT response. Falls back to canned content if no API key / API fails."""
+        self.last_error = None
         if config.OPENAI_API_KEY:
             try:
                 system_message = self._build_system_message(is_crisis, sentiment, summary)
                 yield from stream_openai_response(system_message, user_input, conversation_history)
                 return
             except Exception as e:
+                self.last_error = f"{type(e).__name__}: {e}"
                 logger.warning("Mental health sub-agent OpenAI call failed: %s", e)
+        else:
+            self.last_error = "No OpenAI API key configured"
         yield self._fallback_response(user_input, is_crisis)
 
     def process(

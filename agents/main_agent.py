@@ -26,9 +26,11 @@ class MainAgent:
             "general_wellbeing": SupportAdvisorAgent(),
         }
         self.conversation_history: list[dict] = []
+        self.last_api_error: str | None = None
 
     def reset_conversation(self):
         self.conversation_history = []
+        self.last_api_error = None
 
     def _classify(self, cleaned_input: str) -> dict:
         """Run classification + crisis detection. Returns routing info."""
@@ -78,6 +80,7 @@ class MainAgent:
             return
 
         cleaned_input = preprocess_input(user_input)
+        self.last_api_error = None
         routing = self._classify(cleaned_input)
         selected = self._select_sub_agents(routing["categories"])
 
@@ -89,6 +92,7 @@ class MainAgent:
         }
 
         full_response_parts: list[str] = []
+        errors: list[str] = []
         for i, (category, agent) in enumerate(selected):
             if i > 0:
                 separator = (
@@ -106,6 +110,12 @@ class MainAgent:
             ):
                 full_response_parts.append(chunk)
                 yield chunk
+
+            if agent.last_error:
+                errors.append(f"{agent.label}: {agent.last_error}")
+
+        if errors:
+            self.last_api_error = " | ".join(errors)
 
         full_response = "".join(full_response_parts)
         self.conversation_history.append({"role": "user", "content": user_input})

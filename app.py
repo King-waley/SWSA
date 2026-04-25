@@ -317,6 +317,44 @@ div[data-testid="stChatMessage"] a {
 @keyframes msgIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 div[data-testid="stChatMessage"]:has(.stMarkdown) { line-height: 1.65; }
 
+/* ── Typing Indicator ──────────────────────────────────────── */
+.typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 2px;
+}
+.typing-dots span {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #94A3B8;
+    border-radius: 50%;
+    animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typing-bounce {
+    0%, 80%, 100% { transform: scale(0.55); opacity: 0.4; }
+    40%           { transform: scale(1.0);  opacity: 1; }
+}
+[data-theme="dark"] .typing-dots span { background: #64748B; }
+
+/* ── API Error Banner ──────────────────────────────────────── */
+.api-error {
+    background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+    border-left: 4px solid #F57C00;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 0.7rem 1rem;
+    margin: 0.4rem 0 0.8rem;
+    font-size: 0.82rem;
+    color: #BF360C;
+}
+[data-theme="dark"] .api-error {
+    background: linear-gradient(135deg, rgba(245,124,0,0.18), rgba(245,124,0,0.08));
+    color: #FFCC80;
+}
+
 /* ── Chat Input ────────────────────────────────────────────── */
 div[data-testid="stChatInput"] { border-radius: var(--radius-lg) !important; overflow: hidden; }
 div[data-testid="stChatInput"] textarea {
@@ -695,12 +733,7 @@ if not st.session_state.started:
                 if st.button(f"{icon}\n**{title}**\n{desc}", key=f"qa_{title}", use_container_width=True):
                     st.session_state.started = True
                     st.session_state.pending_input = prompt
-                    mood_note = f" You mentioned feeling **{st.session_state.mood.lower()}**." if st.session_state.mood else ""
-                    welcome = (
-                        f"Welcome to **S.W.S.A.** 🛡️{mood_note} "
-                        f"Let me look into **{title}** for you."
-                    )
-                    st.session_state.messages = [{"role": "assistant", "content": welcome, "metadata": None}]
+                    st.session_state.messages = []
                     st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
@@ -709,9 +742,7 @@ if not st.session_state.started:
         user_input_landing = st.chat_input("Or just type what's on your mind...")
         if user_input_landing:
             st.session_state.started = True
-            mood_note = f" You mentioned feeling **{st.session_state.mood.lower()}**." if st.session_state.mood else ""
-            welcome = f"Welcome to **S.W.S.A.** 🛡️{mood_note} Let me look into your concern."
-            st.session_state.messages = [{"role": "assistant", "content": welcome, "metadata": None}]
+            st.session_state.messages = []
             st.session_state.pending_input = user_input_landing
             st.rerun()
 
@@ -747,6 +778,12 @@ else:
                 if metadata and metadata.get("is_crisis"):
                     render_crisis()
                 st.markdown(msg["content"])
+                if metadata and metadata.get("api_error"):
+                    st.markdown(
+                        f'<div class="api-error">⚠️ <strong>AI mode unavailable</strong> — '
+                        f'showing template response. Reason: {metadata["api_error"]}</div>',
+                        unsafe_allow_html=True,
+                    )
 
                 # Feedback row
                 if metadata and metadata.get("categories"):
@@ -787,13 +824,47 @@ else:
 
         with st.chat_message("assistant", avatar="🛡️"):
             stream = st.session_state.agent.process_message_stream(active_input)
+
+            # Typing indicator while the classifier OpenAI call runs
+            classify_typing = st.empty()
+            classify_typing.markdown(
+                '<div class="typing-dots"><span></span><span></span><span></span></div>',
+                unsafe_allow_html=True,
+            )
             metadata = next(stream)
+            classify_typing.empty()
 
             render_badges(metadata)
             if metadata.get("is_crisis"):
                 render_crisis()
 
-            full_response = st.write_stream(stream)
+            # Typing indicator while the sub-agent waits for first token
+            response_typing = st.empty()
+            response_typing.markdown(
+                '<div class="typing-dots"><span></span><span></span><span></span></div>',
+                unsafe_allow_html=True,
+            )
+
+            def _clear_typing_on_first_chunk(src, ph):
+                cleared = False
+                for chunk in src:
+                    if not cleared:
+                        ph.empty()
+                        cleared = True
+                    yield chunk
+                if not cleared:
+                    ph.empty()
+
+            full_response = st.write_stream(_clear_typing_on_first_chunk(stream, response_typing))
+
+            # If any sub-agent fell back to its template, show a warning
+            api_error = getattr(st.session_state.agent, "last_api_error", None)
+            if api_error:
+                st.markdown(
+                    f'<div class="api-error">⚠️ <strong>AI mode unavailable</strong> — '
+                    f'showing template response. Reason: {api_error}</div>',
+                    unsafe_allow_html=True,
+                )
 
             st.session_state.interaction_count += 1
             for c in metadata.get("categories", []):
@@ -804,7 +875,11 @@ else:
                     for a in metadata["sub_agents_used"]:
                         st.markdown(f"• {a}")
 
+        # Persist API-error state into the saved message so it survives reruns
+        msg_metadata = dict(metadata)
+        if api_error:
+            msg_metadata["api_error"] = api_error
         st.session_state.messages.append({
-            "role": "assistant", "content": full_response, "metadata": metadata,
+            "role": "assistant", "content": full_response, "metadata": msg_metadata,
         })
         st.rerun()

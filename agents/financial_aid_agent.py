@@ -31,6 +31,9 @@ class FinancialAidAgent:
     category = "financial"
     label = "Financial Aid Sub-Agent"
 
+    def __init__(self):
+        self.last_error: str | None = None
+
     def _build_system_message(self, sentiment: str, summary: str) -> str:
         sub_prompt = SUB_AGENT_PROMPTS[self.category]
         services_ctx = format_services_context(get_services_for_categories([self.category]))
@@ -65,13 +68,17 @@ class FinancialAidAgent:
         summary: str = "",
     ):
         """Stream a ChatGPT response. Falls back to template if no API key / API fails."""
+        self.last_error = None
         if config.OPENAI_API_KEY:
             try:
                 system_message = self._build_system_message(sentiment, summary)
                 yield from stream_openai_response(system_message, user_input, conversation_history)
                 return
             except Exception as e:
+                self.last_error = f"{type(e).__name__}: {e}"
                 logger.warning("Financial aid sub-agent OpenAI call failed: %s", e)
+        else:
+            self.last_error = "No OpenAI API key configured"
         yield self._fallback_response()
 
     def process(
