@@ -1,57 +1,123 @@
-"""Housing advice sub-agent."""
+"""Housing advice sub-agent — calls ChatGPT directly."""
 
-from core.recommendation import get_external_resources, get_services_for_categories
+import logging
+
+import config
+from config import SUB_AGENT_PROMPTS, SYSTEM_PROMPT
+from core.recommendation import (
+    format_external_context,
+    format_services_context,
+    get_external_resources,
+    get_services_for_categories,
+)
+
+from agents._llm import stream_openai_response
+
+logger = logging.getLogger(__name__)
+
+
+HOUSING_TIPS = [
+    "Always read your tenancy agreement carefully before signing.",
+    "Take dated photos of the property when you move in to protect your deposit.",
+    "Know your rights — landlords must provide a safe, habitable property.",
+    "The Students' Union Advice Service offers free, independent housing advice.",
+    "If you're looking for private housing, start your search early (Jan-Mar for September).",
+]
 
 
 class HousingAdviceAgent:
-    """Sub-agent specialising in housing support and guidance."""
+    """Sub-agent that calls ChatGPT for housing concerns."""
 
-    def __init__(self):
-        self.category = "housing"
+    category = "housing"
+    label = "Housing Advice Sub-Agent"
 
-    def get_empathy_message(self, user_input: str) -> str:
-        """Select an appropriate empathetic opening based on housing concern."""
-        text_lower = user_input.lower()
-        if any(w in text_lower for w in ["homeless", "nowhere to live", "kicked out", "evict"]):
-            return (
-                "I'm really sorry you're in this situation. Finding yourself without housing is incredibly stressful. "
-                "There is emergency accommodation support available — let's get you help right away."
+    def _build_system_message(self, sentiment: str, summary: str) -> str:
+        sub_prompt = SUB_AGENT_PROMPTS[self.category]
+        services_ctx = format_services_context(get_services_for_categories([self.category]))
+        external_ctx = format_external_context(get_external_resources([self.category]))
+
+        sentiment_hint = ""
+        if sentiment == "distressed":
+            sentiment_hint = "\nThe student appears emotionally distressed about housing — acknowledge feelings before practical steps."
+        elif sentiment == "worried":
+            sentiment_hint = "\nThe student seems worried — be reassuring and action-oriented."
+
+        summary_hint = f"\nCore concern identified: {summary}" if summary else ""
+
+        sections = [
+            f"{SYSTEM_PROMPT}",
+            "",
+            f"--- Your Role ---\n{sub_prompt}{sentiment_hint}{summary_hint}",
+            "",
+            f"--- Housing Services Available ---\n{services_ctx}",
+        ]
+        if external_ctx:
+            sections.extend(["", external_ctx])
+
+        return "\n".join(sections)
+
+    def process_stream(
+        self,
+        user_input: str,
+        conversation_history: list[dict] | None = None,
+        is_crisis: bool = False,
+        sentiment: str = "neutral",
+        summary: str = "",
+    ):
+        if config.OPENAI_API_KEY:
+            try:
+                system_message = self._build_system_message(sentiment, summary)
+                yield from stream_openai_response(system_message, user_input, conversation_history)
+                return
+            except Exception as e:
+                logger.warning("Housing advice sub-agent OpenAI call failed: %s", e)
+        yield self._fallback_response()
+
+    def process(
+        self,
+        user_input: str,
+        conversation_history: list[dict] | None = None,
+        is_crisis: bool = False,
+        sentiment: str = "neutral",
+        summary: str = "",
+    ) -> dict:
+        chunks = list(
+            self.process_stream(
+                user_input,
+                conversation_history=conversation_history,
+                is_crisis=is_crisis,
+                sentiment=sentiment,
+                summary=summary,
             )
-        if any(w in text_lower for w in ["landlord", "dispute", "repair", "broken"]):
-            return (
-                "Dealing with housing issues can be very frustrating. "
-                "Let me connect you with services that can advise you on your rights and next steps."
-            )
-        return (
-            "Housing concerns can really affect your wellbeing and studies. "
-            "Let's look at what support and resources are available to help."
         )
+        return {"agent": self.label, "response": "".join(chunks)}
 
-    def get_recommendations(self) -> list[dict]:
-        """Retrieve housing support services."""
-        return get_services_for_categories([self.category])
-
-    def get_housing_platforms(self) -> list[dict]:
-        """Retrieve external housing search platforms."""
-        resources = get_external_resources([self.category])
-        return resources.get("housing_platforms", [])
-
-    def get_housing_tips(self) -> list[str]:
-        """Provide practical housing advice for students."""
-        return [
-            "Always read your tenancy agreement carefully before signing.",
-            "Take dated photos of the property when you move in to protect your deposit.",
-            "Know your rights — landlords must provide a safe, habitable property.",
-            "The Students' Union Advice Service offers free, independent housing advice.",
-            "If you're looking for private housing, start your search early (Jan-Mar for September).",
+    def _fallback_response(self) -> str:
+        parts = [
+            "Housing concerns can really affect your wellbeing and studies. "
+            "Let's look at what support and resources are available to help.",
+            "",
         ]
 
-    def process(self, user_input: str) -> dict:
-        """Process a housing concern and return structured guidance."""
-        return {
-            "agent": "Housing Advice Sub-Agent",
-            "empathy_message": self.get_empathy_message(user_input),
-            "services": self.get_recommendations(),
-            "housing_platforms": self.get_housing_platforms(),
-            "housing_tips": self.get_housing_tips(),
-        }
+        services = get_services_for_categories([self.category])
+        if services:
+            parts.append("**Services that can help:**")
+            for s in services[:3]:
+                parts.append(f"- **{s['name']}** — {s.get('description', '')}")
+                if s.get("phone"):
+                    parts.append(f"  Phone: {s['phone']}")
+            parts.append("")
+
+        external = get_external_resources([self.category])
+        platforms = external.get("housing_platforms", [])
+        if platforms:
+            parts.append("**Housing platforms:**")
+            for p in platforms:
+                parts.append(f"- [{p['name']}]({p['url']}) — {p.get('description', '')}")
+            parts.append("")
+
+        parts.append("**Housing tips:**")
+        for t in HOUSING_TIPS:
+            parts.append(f"- {t}")
+
+        return "\n".join(parts)

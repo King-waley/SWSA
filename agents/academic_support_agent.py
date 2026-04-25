@@ -1,83 +1,102 @@
-"""Academic support sub-agent."""
+"""Academic support sub-agent — calls ChatGPT directly."""
 
-from core.recommendation import get_services_for_categories
+import logging
+
+import config
+from config import SUB_AGENT_PROMPTS, SYSTEM_PROMPT
+from core.recommendation import format_services_context, get_services_for_categories
+
+from agents._llm import stream_openai_response
+
+logger = logging.getLogger(__name__)
+
+
+GENERAL_STUDY_TIPS = [
+    "Speak to your Academic Personal Tutor for personalised guidance.",
+    "The Study Skills team offers one-to-one and group support sessions.",
+    "Use the library's research support for finding and evaluating sources.",
+    "Check if you're eligible for mitigating circumstances or extensions.",
+]
 
 
 class AcademicSupportAgent:
-    """Sub-agent specialising in academic support and guidance."""
+    """Sub-agent that calls ChatGPT for academic concerns."""
 
-    def __init__(self):
-        self.category = "academic"
+    category = "academic"
+    label = "Academic Support Sub-Agent"
 
-    def get_empathy_message(self, user_input: str) -> str:
-        """Select an appropriate empathetic opening based on academic concern."""
-        text_lower = user_input.lower()
-        if any(w in text_lower for w in ["fail", "failing", "failed"]):
-            return (
-                "I understand you're worried about your academic performance. "
-                "Many students face challenges, and there are support systems to help you get back on track."
-            )
-        if any(w in text_lower for w in ["deadline", "extension", "late"]):
-            return (
-                "Deadline pressure can feel intense. Let's look at what options are available to you, "
-                "including extensions and mitigating circumstances."
-            )
-        if any(w in text_lower for w in ["dissertation", "thesis"]):
-            return (
-                "Working on a dissertation can feel overwhelming. "
-                "Let's find the right support to help you through this important piece of work."
-            )
+    def _build_system_message(self, sentiment: str, summary: str) -> str:
+        sub_prompt = SUB_AGENT_PROMPTS[self.category]
+        services_ctx = format_services_context(get_services_for_categories([self.category]))
+
+        sentiment_hint = ""
+        if sentiment == "distressed":
+            sentiment_hint = "\nThe student appears emotionally distressed about academics — acknowledge feelings before practical advice."
+        elif sentiment == "worried":
+            sentiment_hint = "\nThe student seems worried — be encouraging and solution-oriented."
+
+        summary_hint = f"\nCore concern identified: {summary}" if summary else ""
+
         return (
-            "Academic challenges are a normal part of university life. "
-            "Let me help you find the support that suits your situation."
+            f"{SYSTEM_PROMPT}\n\n"
+            f"--- Your Role ---\n{sub_prompt}{sentiment_hint}{summary_hint}\n\n"
+            f"--- Academic Services Available ---\n{services_ctx}"
         )
 
-    def get_recommendations(self) -> list[dict]:
-        """Retrieve academic support services."""
-        return get_services_for_categories([self.category])
+    def process_stream(
+        self,
+        user_input: str,
+        conversation_history: list[dict] | None = None,
+        is_crisis: bool = False,
+        sentiment: str = "neutral",
+        summary: str = "",
+    ):
+        if config.OPENAI_API_KEY:
+            try:
+                system_message = self._build_system_message(sentiment, summary)
+                yield from stream_openai_response(system_message, user_input, conversation_history)
+                return
+            except Exception as e:
+                logger.warning("Academic support sub-agent OpenAI call failed: %s", e)
+        yield self._fallback_response()
 
-    def get_study_tips(self, concern: str) -> list[str]:
-        """Provide study advice based on the specific academic concern."""
-        tips = {
-            "time_management": [
-                "Use a weekly planner to block out study time, breaks, and deadlines.",
-                "Try the Pomodoro Technique — 25 minutes focused study, 5 minutes break.",
-                "Prioritise tasks using the Eisenhower Matrix (urgent vs. important).",
-                "Set realistic daily goals rather than overwhelming to-do lists.",
-            ],
-            "exam": [
-                "Start revision early using spaced repetition techniques.",
-                "Practice with past exam papers under timed conditions.",
-                "Form study groups to discuss and test each other on key topics.",
-                "Attend the Study Skills team's exam preparation workshops.",
-            ],
-            "writing": [
-                "Start with an outline before writing — structure helps clarity.",
-                "Use the university's referencing guide for your citation style.",
-                "Book a session with Study Skills for feedback on your academic writing.",
-                "Write first, edit later — don't aim for perfection in the first draft.",
-            ],
-            "default": [
-                "Speak to your Academic Personal Tutor for personalised guidance.",
-                "The Study Skills team offers one-to-one and group support sessions.",
-                "Use the library's research support for finding and evaluating sources.",
-                "Check if you're eligible for mitigating circumstances or extensions.",
-            ],
-        }
-        text_lower = concern.lower()
-        if any(w in text_lower for w in ["time", "manage", "organis", "procrastinat"]):
-            return tips["time_management"]
-        if any(w in text_lower for w in ["exam", "revision", "test"]):
-            return tips["exam"]
-        if any(w in text_lower for w in ["essay", "writing", "assignment", "coursework", "referenc"]):
-            return tips["writing"]
-        return tips["default"]
+    def process(
+        self,
+        user_input: str,
+        conversation_history: list[dict] | None = None,
+        is_crisis: bool = False,
+        sentiment: str = "neutral",
+        summary: str = "",
+    ) -> dict:
+        chunks = list(
+            self.process_stream(
+                user_input,
+                conversation_history=conversation_history,
+                is_crisis=is_crisis,
+                sentiment=sentiment,
+                summary=summary,
+            )
+        )
+        return {"agent": self.label, "response": "".join(chunks)}
 
-    def process(self, user_input: str) -> dict:
-        """Process an academic concern and return structured guidance."""
-        return {
-            "agent": "Academic Support Sub-Agent",
-            "empathy_message": self.get_empathy_message(user_input),
-            "services": self.get_recommendations(),
-            "study_tips": self.get_study_tips(user_input),
-        }
+    def _fallback_response(self) -> str:
+        parts = [
+            "Academic challenges are a normal part of university life. "
+            "Let me help you find the support that suits your situation.",
+            "",
+        ]
+
+        services = get_services_for_categories([self.category])
+        if services:
+            parts.append("**Services that can help:**")
+            for s in services[:3]:
+                parts.append(f"- **{s['name']}** — {s.get('description', '')}")
+                if s.get("phone"):
+                    parts.append(f"  Phone: {s['phone']}")
+            parts.append("")
+
+        parts.append("**Study tips:**")
+        for t in GENERAL_STUDY_TIPS:
+            parts.append(f"- {t}")
+
+        return "\n".join(parts)

@@ -1,57 +1,124 @@
-"""Financial aid sub-agent."""
+"""Financial aid sub-agent — calls ChatGPT directly."""
 
-from core.recommendation import get_external_resources, get_services_for_categories
+import logging
+
+import config
+from config import SUB_AGENT_PROMPTS, SYSTEM_PROMPT
+from core.recommendation import (
+    format_external_context,
+    format_services_context,
+    get_external_resources,
+    get_services_for_categories,
+)
+
+from agents._llm import stream_openai_response
+
+logger = logging.getLogger(__name__)
+
+
+BUDGETING_TIPS = [
+    "Track your spending for a week to understand where your money goes.",
+    "Check if you're eligible for student discounts (NUS/TOTUM card, UNiDAYS).",
+    "Look into student bank accounts with interest-free overdrafts.",
+    "The university's financial support team can do a full benefits check for you.",
+    "Check eligibility for the university Hardship Fund for emergency costs.",
+]
 
 
 class FinancialAidAgent:
-    """Sub-agent specialising in financial support and guidance."""
+    """Sub-agent that calls ChatGPT for financial concerns."""
 
-    def __init__(self):
-        self.category = "financial"
+    category = "financial"
+    label = "Financial Aid Sub-Agent"
 
-    def get_empathy_message(self, user_input: str) -> str:
-        """Select an appropriate empathetic opening based on financial concern."""
-        text_lower = user_input.lower()
-        if any(w in text_lower for w in ["urgent", "emergency", "desperate", "can't pay"]):
-            return (
-                "I understand you're in a difficult financial situation right now. "
-                "There are emergency support options available — let's look at what can help immediately."
+    def _build_system_message(self, sentiment: str, summary: str) -> str:
+        sub_prompt = SUB_AGENT_PROMPTS[self.category]
+        services_ctx = format_services_context(get_services_for_categories([self.category]))
+        external_ctx = format_external_context(get_external_resources([self.category]))
+
+        sentiment_hint = ""
+        if sentiment == "distressed":
+            sentiment_hint = "\nThe student appears emotionally distressed about money — be reassuring."
+        elif sentiment == "worried":
+            sentiment_hint = "\nThe student seems worried — emphasise that financial stress is common and help is available."
+
+        summary_hint = f"\nCore concern identified: {summary}" if summary else ""
+
+        sections = [
+            f"{SYSTEM_PROMPT}",
+            "",
+            f"--- Your Role ---\n{sub_prompt}{sentiment_hint}{summary_hint}",
+            "",
+            f"--- Financial Services Available ---\n{services_ctx}",
+        ]
+        if external_ctx:
+            sections.extend(["", external_ctx])
+
+        return "\n".join(sections)
+
+    def process_stream(
+        self,
+        user_input: str,
+        conversation_history: list[dict] | None = None,
+        is_crisis: bool = False,
+        sentiment: str = "neutral",
+        summary: str = "",
+    ):
+        """Stream a ChatGPT response. Falls back to template if no API key / API fails."""
+        if config.OPENAI_API_KEY:
+            try:
+                system_message = self._build_system_message(sentiment, summary)
+                yield from stream_openai_response(system_message, user_input, conversation_history)
+                return
+            except Exception as e:
+                logger.warning("Financial aid sub-agent OpenAI call failed: %s", e)
+        yield self._fallback_response()
+
+    def process(
+        self,
+        user_input: str,
+        conversation_history: list[dict] | None = None,
+        is_crisis: bool = False,
+        sentiment: str = "neutral",
+        summary: str = "",
+    ) -> dict:
+        chunks = list(
+            self.process_stream(
+                user_input,
+                conversation_history=conversation_history,
+                is_crisis=is_crisis,
+                sentiment=sentiment,
+                summary=summary,
             )
-        if any(w in text_lower for w in ["job", "work", "employment", "part-time"]):
-            return (
-                "Finding the right job alongside your studies can be challenging. "
-                "Let me point you to some useful resources."
-            )
-        return (
-            "Financial worries are very common among students, and there's no shame in seeking support. "
-            "Let's explore what help is available to you."
         )
+        return {"agent": self.label, "response": "".join(chunks)}
 
-    def get_recommendations(self) -> list[dict]:
-        """Retrieve financial support services."""
-        return get_services_for_categories([self.category])
-
-    def get_job_platforms(self) -> list[dict]:
-        """Retrieve external job search platforms."""
-        resources = get_external_resources([self.category])
-        return resources.get("job_platforms", [])
-
-    def get_budgeting_tips(self) -> list[str]:
-        """Provide practical budgeting advice for students."""
-        return [
-            "Track your spending for a week to understand where your money goes.",
-            "Check if you're eligible for student discounts (NUS/TOTUM card, UNiDAYS).",
-            "Look into student bank accounts with interest-free overdrafts.",
-            "The university's financial support team can do a full benefits check for you.",
-            "Check eligibility for the university Hardship Fund for emergency costs.",
+    def _fallback_response(self) -> str:
+        parts = [
+            "Financial worries are very common among students, and there's no shame in seeking support. "
+            "Let's explore what help is available to you.",
+            "",
         ]
 
-    def process(self, user_input: str) -> dict:
-        """Process a financial concern and return structured guidance."""
-        return {
-            "agent": "Financial Aid Sub-Agent",
-            "empathy_message": self.get_empathy_message(user_input),
-            "services": self.get_recommendations(),
-            "job_platforms": self.get_job_platforms(),
-            "budgeting_tips": self.get_budgeting_tips(),
-        }
+        services = get_services_for_categories([self.category])
+        if services:
+            parts.append("**Services that can help:**")
+            for s in services[:3]:
+                parts.append(f"- **{s['name']}** — {s.get('description', '')}")
+                if s.get("phone"):
+                    parts.append(f"  Phone: {s['phone']}")
+            parts.append("")
+
+        external = get_external_resources([self.category])
+        job_platforms = external.get("job_platforms", [])
+        if job_platforms:
+            parts.append("**Job platforms:**")
+            for j in job_platforms:
+                parts.append(f"- [{j['name']}]({j['url']}) — {j.get('description', '')}")
+            parts.append("")
+
+        parts.append("**Budgeting tips:**")
+        for t in BUDGETING_TIPS:
+            parts.append(f"- {t}")
+
+        return "\n".join(parts)
