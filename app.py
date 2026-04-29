@@ -392,123 +392,150 @@ div[data-testid="stChatInput"] textarea {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK MODE — Streamlit [data-theme="dark"]
+   DARK MODE — applied via the `.swsa-dark` class on <html>
+   (a small inline <script> sets it from the user's choice + their
+    system `prefers-color-scheme`).
    ═══════════════════════════════════════════════════════════════ */
 
 /* Main background */
-[data-theme="dark"] .stApp,
-.stApp[data-theme="dark"] {
+.swsa-dark .stApp {
     background: linear-gradient(160deg, #0F172A 0%, #1E293B 40%, #1A1530 100%) !important;
+    color: #E2E8F0;
 }
 
 /* Glass cards */
-[data-theme="dark"] .glass-card {
+.swsa-dark .glass-card {
     background: rgba(30,41,59,0.80) !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
 }
-[data-theme="dark"] .glass-card h4 {
+.swsa-dark .glass-card h4 {
     color: #E2E8F0 !important;
 }
 
 /* Chat messages */
-[data-theme="dark"] div[data-testid="stChatMessage"] {
+.swsa-dark div[data-testid="stChatMessage"] {
     background: #1E293B !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
     color: #E2E8F0 !important;
 }
-[data-theme="dark"] div[data-testid="stChatMessage"] p,
-[data-theme="dark"] div[data-testid="stChatMessage"] li,
-[data-theme="dark"] div[data-testid="stChatMessage"] span:not(.cat-badge):not(.sent-badge),
-[data-theme="dark"] div[data-testid="stChatMessage"] strong,
-[data-theme="dark"] div[data-testid="stChatMessage"] a {
+.swsa-dark div[data-testid="stChatMessage"] p,
+.swsa-dark div[data-testid="stChatMessage"] li,
+.swsa-dark div[data-testid="stChatMessage"] span:not(.cat-badge):not(.sent-badge),
+.swsa-dark div[data-testid="stChatMessage"] strong,
+.swsa-dark div[data-testid="stChatMessage"] a {
     color: #E2E8F0 !important;
 }
 
 /* Hero text colours */
-[data-theme="dark"] .swsa-desc { color: #64748B !important; }
-[data-theme="dark"] .swsa-tagline { color: #94A3B8 !important; }
-[data-theme="dark"] .fn-dot { color: #475569 !important; }
-[data-theme="dark"] .fn1 { color: var(--c1-light) !important; }
-[data-theme="dark"] .fn2 { color: var(--c2-light) !important; }
-[data-theme="dark"] .fn3 { color: var(--c3-light) !important; }
-[data-theme="dark"] .fn4 { color: var(--c4-light) !important; }
+.swsa-dark .swsa-desc { color: #64748B !important; }
+.swsa-dark .swsa-tagline { color: #94A3B8 !important; }
+.swsa-dark .fn-dot { color: #475569 !important; }
+.swsa-dark .fn1 { color: var(--c1-light) !important; }
+.swsa-dark .fn2 { color: var(--c2-light) !important; }
+.swsa-dark .fn3 { color: var(--c3-light) !important; }
+.swsa-dark .fn4 { color: var(--c4-light) !important; }
 
 /* Info banner */
-[data-theme="dark"] .info-banner {
+.swsa-dark .info-banner {
     background: linear-gradient(135deg, rgba(45,106,79,0.2), rgba(45,106,79,0.1)) !important;
     border-color: rgba(82,183,136,0.25) !important;
     color: #A7F3D0 !important;
 }
 
 /* Main area buttons */
-[data-theme="dark"] .stMainBlockContainer .stColumns div[data-testid="stVerticalBlock"] .stButton > button {
+.swsa-dark .stMainBlockContainer .stColumns div[data-testid="stVerticalBlock"] .stButton > button {
     background: rgba(30,41,59,0.70) !important;
     border: 1.5px solid rgba(255,255,255,0.10) !important;
     color: #E2E8F0 !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
 }
-[data-theme="dark"] .stMainBlockContainer .stColumns div[data-testid="stVerticalBlock"] .stButton > button:hover {
+.swsa-dark .stMainBlockContainer .stColumns div[data-testid="stVerticalBlock"] .stButton > button:hover {
     background: rgba(45,106,79,0.25) !important;
     border-color: var(--c1-light) !important;
     box-shadow: 0 8px 25px rgba(45,106,79,0.2) !important;
 }
 
 /* Category badges dark */
-[data-theme="dark"] .cb-mental_health     { background: rgba(45,106,79,0.3); color: #A7F3D0; }
-[data-theme="dark"] .cb-financial         { background: rgba(230,81,0,0.25);  color: #FFCC80; }
-[data-theme="dark"] .cb-academic          { background: rgba(21,101,192,0.3); color: #90CAF9; }
-[data-theme="dark"] .cb-housing           { background: rgba(123,31,162,0.3); color: #CE93D8; }
-[data-theme="dark"] .cb-general_wellbeing { background: rgba(245,127,23,0.25);color: #FFF176; }
+.swsa-dark .cb-mental_health     { background: rgba(45,106,79,0.3); color: #A7F3D0; }
+.swsa-dark .cb-financial         { background: rgba(230,81,0,0.25);  color: #FFCC80; }
+.swsa-dark .cb-academic          { background: rgba(21,101,192,0.3); color: #90CAF9; }
+.swsa-dark .cb-housing           { background: rgba(123,31,162,0.3); color: #CE93D8; }
+.swsa-dark .cb-general_wellbeing { background: rgba(245,127,23,0.25);color: #FFF176; }
 
 /* Sentiment badges dark */
-[data-theme="dark"] .sb-distressed { background: rgba(211,47,47,0.25); color: #EF9A9A; }
-[data-theme="dark"] .sb-worried    { background: rgba(230,81,0,0.25);  color: #FFCC80; }
-[data-theme="dark"] .sb-neutral    { background: rgba(255,255,255,0.08); color: #90A4AE; }
-[data-theme="dark"] .sb-positive   { background: rgba(45,106,79,0.25); color: #A5D6A7; }
+.swsa-dark .sb-distressed { background: rgba(211,47,47,0.25); color: #EF9A9A; }
+.swsa-dark .sb-worried    { background: rgba(230,81,0,0.25);  color: #FFCC80; }
+.swsa-dark .sb-neutral    { background: rgba(255,255,255,0.08); color: #90A4AE; }
+.swsa-dark .sb-positive   { background: rgba(45,106,79,0.25); color: #A5D6A7; }
 
 /* Crisis banner dark */
-[data-theme="dark"] .crisis-box {
+.swsa-dark .crisis-box {
     background: linear-gradient(135deg, rgba(211,47,47,0.15), rgba(211,47,47,0.08)) !important;
     border-left-color: #EF5350 !important;
     color: #EF9A9A !important;
 }
 
 /* Expander dark */
-[data-theme="dark"] .stMainBlockContainer div[data-testid="stExpander"] {
+.swsa-dark .stMainBlockContainer div[data-testid="stExpander"] {
     background: rgba(30,41,59,0.5) !important;
     border: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 /* Divider dark */
-[data-theme="dark"] .sep {
+.swsa-dark .sep {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 50%, transparent) !important;
 }
 
 /* Footer dark */
-[data-theme="dark"] .swsa-footer { color: #475569 !important; }
+.swsa-dark .swsa-footer { color: #475569 !important; }
 
 /* Feature columns text */
-[data-theme="dark"] .stMainBlockContainer .stMarkdown p {
+.swsa-dark .stMainBlockContainer .stMarkdown p {
     color: #CBD5E1 !important;
 }
-[data-theme="dark"] .stMainBlockContainer .stMarkdown strong {
+.swsa-dark .stMainBlockContainer .stMarkdown strong {
     color: #F1F5F9 !important;
 }
 
 /* Chat input dark */
-[data-theme="dark"] div[data-testid="stChatInput"] textarea {
+.swsa-dark div[data-testid="stChatInput"] textarea {
     background: rgba(30,41,59,0.7) !important;
     color: #E2E8F0 !important;
     border-color: rgba(255,255,255,0.1) !important;
 }
 
 /* Scrollbar dark */
-[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #334155; }
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #475569; }
+.swsa-dark ::-webkit-scrollbar-thumb { background: #334155; }
+.swsa-dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 </style>
 """, unsafe_allow_html=True)
+
+
+#  THEME — apply .swsa-dark / .swsa-light to <html> based on user choice + system preference
+_theme_label_to_value = {"🤖 Auto": "auto", "☀️ Light": "light", "🌙 Dark": "dark"}
+_theme_choice = _theme_label_to_value.get(
+    st.session_state.get("theme_choice", "🤖 Auto"), "auto"
+)
+st.markdown(
+    f"""
+<script>
+(function() {{
+  const html = (window.parent && window.parent.document && window.parent.document.documentElement)
+            || document.documentElement;
+  const choice = "{_theme_choice}";
+  const systemDark = window.matchMedia
+      && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = choice === 'dark' || (choice === 'auto' && systemDark);
+  html.classList.toggle('swsa-dark', isDark);
+  html.classList.toggle('swsa-light', !isDark);
+  html.style.colorScheme = isDark ? 'dark' : 'light';
+}})();
+</script>
+""",
+    unsafe_allow_html=True,
+)
 
 
 #  SESSION STATE
@@ -585,6 +612,23 @@ with st.sidebar:
     for key, label in CATEGORY_LABELS.items():
         mark = " ✓" if key in st.session_state.categories_helped else ""
         st.markdown(f"{cat_icons[key]}  {label}{mark}")
+
+    st.markdown("---")
+    st.markdown("##### 🎨 Theme")
+    theme_options = ["🤖 Auto", "☀️ Light", "🌙 Dark"]
+    previous_choice = st.session_state.get("theme_choice", "🤖 Auto")
+    new_choice = st.radio(
+        "Theme picker",
+        options=theme_options,
+        index=theme_options.index(previous_choice) if previous_choice in theme_options else 0,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="theme_choice",
+        help="Auto follows your system's light/dark setting.",
+    )
+    # If the user just changed it, rerun so the JS at the top picks up the new value.
+    if new_choice != previous_choice:
+        st.rerun()
 
     st.markdown("---")
     with st.expander("🚨 Emergency Contacts"):

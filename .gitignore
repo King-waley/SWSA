@@ -6,7 +6,7 @@ venv/
 *.egg-info/
 dist/
 build/
-.streamlit/
+.streamlit/secrets.toml
 *.pptx
 *.docx
 create_*.py

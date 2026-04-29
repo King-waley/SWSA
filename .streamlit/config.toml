@@ -1,0 +1,13 @@
+[theme]
+# Brand colour (S.W.S.A. green) used for primary buttons and highlights
+primaryColor = "#2D6A4F"
+# Light-theme defaults; the in-app CSS handles dark mode via
+# `prefers-color-scheme` and a manual sidebar override.
+base = "light"
+backgroundColor = "#FAFBFD"
+secondaryBackgroundColor = "#F0F4F8"
+textColor = "#1B2A3D"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
