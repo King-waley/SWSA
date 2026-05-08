@@ -1,5 +1,6 @@
 """S.W.S.A. Streamlit web application."""
 
+import logging
 import sys
 import os
 
@@ -9,6 +10,10 @@ import streamlit as st
 import config
 from config import CATEGORY_LABELS
 from agents.main_agent import MainAgent
+from auth.ui import render_auth_page
+from db import init_db
+
+logger = logging.getLogger(__name__)
 
 st.set_page_config(
     page_title="S.W.S.A. — Student Welfare Support Agent",
@@ -508,6 +513,33 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
+#  DATABASE — bootstrap schema once per process
+@st.cache_resource
+def _bootstrap_db():
+    try:
+        init_db()
+        return None
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Database initialisation failed")
+        return f"{type(exc).__name__}: {exc}"
+
+
+_db_error = _bootstrap_db()
+if _db_error:
+    st.error(
+        "We couldn't connect to the database. "
+        "Sign-in and accounts won't work until this is fixed.\n\n"
+        f"`{_db_error}`"
+    )
+    st.stop()
+
+
+#  AUTH GATE — render login/signup screen until the user is logged in
+if "user" not in st.session_state or st.session_state.user is None:
+    render_auth_page()
+    st.stop()
+
+
 #  SESSION STATE
 if "agent" not in st.session_state:
     st.session_state.agent = MainAgent()
@@ -539,6 +571,26 @@ with st.sidebar:
         <div class="sb-tag">Student Welfare Support Agent</div>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    _user = st.session_state.user
+    _display_name = _user.full_name or _user.username
+    st.markdown(f"##### 👤 Signed in")
+    st.markdown(f"**{_display_name}**  \n`@{_user.username}`")
+    if st.button("🚪 Log out", use_container_width=True, key="logout_btn"):
+        for _k in (
+            "user",
+            "agent",
+            "messages",
+            "started",
+            "mood",
+            "interaction_count",
+            "categories_helped",
+            "feedback_given",
+        ):
+            st.session_state.pop(_k, None)
+        st.rerun()
 
     st.markdown("---")
 

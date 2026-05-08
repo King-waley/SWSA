@@ -7,6 +7,9 @@ venv/
 dist/
 build/
 .streamlit/secrets.toml
+*.db
+*.sqlite
+*.sqlite3
 *.pptx
 *.docx
 create_*.py
