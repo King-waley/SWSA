@@ -826,50 +826,86 @@ def _kb_editor() -> None:
 
     st.markdown("### 📚 Welfare-services knowledge base")
     st.caption(
-        "This JSON drives every recommendation the AI makes. Edit carefully — "
-        "broken JSON falls back to the bundled default file."
-    )
-
-    has_override = get_kb_override() is not None
-    st.caption(
-        "📄 **Currently active:** " +
-        ("**DB override** (this editor's last save)" if has_override else "**bundled default file**")
+        "This is the catalogue of services and resources the AI draws on when "
+        "it recommends help to a student. Editing it changes what the AI knows."
     )
 
     current = load_knowledge_base()
-    text = st.text_area(
-        "JSON",
-        value=_json.dumps(current, indent=2, ensure_ascii=False),
-        height=420,
-        key="kb_editor_text",
+    has_override = get_kb_override() is not None
+
+    # ── Friendly summary ──────────────────────────────────────────
+    services = current.get("services", {}) or {}
+    crisis = current.get("crisis_resources", []) or []
+    external = current.get("external_resources", {}) or {}
+
+    counts_md_lines = []
+    for cat, items in services.items():
+        nice = cat.replace("_", " ").title()
+        counts_md_lines.append(f"- **{nice}** — {len(items)} service(s)")
+
+    cols = st.columns([2, 2])
+    with cols[0]:
+        st.markdown("**Services by category**")
+        if counts_md_lines:
+            st.markdown("\n".join(counts_md_lines))
+        else:
+            st.caption("No services defined.")
+    with cols[1]:
+        st.markdown("**Other entries**")
+        st.markdown(
+            f"- **Crisis resources** — {len(crisis)} entries\n"
+            f"- **External resources** — {len(external)} sections "
+            f"({', '.join(external.keys()) or 'none'})"
+        )
+
+    st.markdown(
+        "📄 **Currently active:** " +
+        ("**Edited version** (last saved here)"
+         if has_override else "**Bundled default file**")
     )
 
-    cols = st.columns(3)
-    if cols[0].button("💾 Save override", type="primary", use_container_width=True):
-        try:
-            parsed = _json.loads(text)
-            if not isinstance(parsed, dict):
-                raise ValueError("Top-level JSON must be an object.")
-        except Exception as exc:  # noqa: BLE001
-            st.error(f"Invalid JSON: {exc}")
-        else:
-            set_kb_override(parsed)
-            aid, aname = _current_admin()
-            audit.log(admin_user_id=aid, admin_username=aname,
-                      action="kb.update", target_type="kb")
-            st.success("Saved. New recommendations use this version.")
+    # ── Raw JSON editor (hidden behind expander so it isn't in admins'
+    #    face by default) ────────────────────────────────────────
+    with st.expander("✏️ Open JSON editor (advanced)"):
+        st.caption(
+            "Direct edit of the underlying JSON. Saving validates the syntax — "
+            "if it's broken, the bundled default file is used instead. Useful "
+            "for bulk edits and adding new categories."
+        )
+        text = st.text_area(
+            "JSON",
+            value=_json.dumps(current, indent=2, ensure_ascii=False),
+            height=420,
+            key="kb_editor_text",
+            label_visibility="collapsed",
+        )
+
+        btn_cols = st.columns(3)
+        if btn_cols[0].button("💾 Save", type="primary", use_container_width=True):
+            try:
+                parsed = _json.loads(text)
+                if not isinstance(parsed, dict):
+                    raise ValueError("Top-level JSON must be an object.")
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Invalid JSON: {exc}")
+            else:
+                set_kb_override(parsed)
+                aid, aname = _current_admin()
+                audit.log(admin_user_id=aid, admin_username=aname,
+                          action="kb.update", target_type="kb")
+                st.success("Saved. New recommendations use this version.")
+                st.rerun()
+
+        if btn_cols[1].button("🔄 Reload", use_container_width=True):
             st.rerun()
 
-    if cols[1].button("🔄 Reload from DB", use_container_width=True):
-        st.rerun()
-
-    if cols[2].button("↩️ Reset to file default", use_container_width=True):
-        set_kb_override(None)
-        aid, aname = _current_admin()
-        audit.log(admin_user_id=aid, admin_username=aname,
-                  action="kb.reset", target_type="kb")
-        st.success("Override cleared — back to the bundled file.")
-        st.rerun()
+        if btn_cols[2].button("↩️ Reset to default", use_container_width=True):
+            set_kb_override(None)
+            aid, aname = _current_admin()
+            audit.log(admin_user_id=aid, admin_username=aname,
+                      action="kb.reset", target_type="kb")
+            st.success("Override cleared — back to the bundled file.")
+            st.rerun()
 
 
 def _announcement_editor() -> None:
