@@ -22,7 +22,9 @@ from auth import (
     get_session_user,
     update_profile,
 )
+from auth.admin import is_admin
 from auth.ui import render_auth_page
+from admin.ui import render_admin_panel
 from db import init_db
 from db.conversations import (
     add_message,
@@ -651,7 +653,7 @@ if "feedback_given" not in st.session_state:
 if "conversation_id" not in st.session_state:
     st.session_state.conversation_id = None
 if "mode" not in st.session_state:
-    st.session_state.mode = "chat"  # 'chat' | 'study'
+    st.session_state.mode = "chat"  # 'chat' | 'study' | 'admin'
 
 
 def _start_new_chat() -> None:
@@ -717,6 +719,21 @@ with st.sidebar:
     _display_name = _user.full_name or _user.username
     st.markdown(f"##### 👤 Signed in")
     st.markdown(f"**{_display_name}**  \n`@{_user.username}`")
+
+    # ── Admin Panel (only shown to admin users) ────────────────
+    if is_admin(_user):
+        st.markdown("---")
+        st.markdown("##### 🛠️ Admin")
+        st.caption("You have admin access via `ADMIN_USERNAMES`.")
+        if st.button(
+            "Open Admin Panel",
+            use_container_width=True,
+            type="primary" if st.session_state.mode == "admin" else "secondary",
+            key="open_admin_btn",
+            disabled=st.session_state.mode == "admin",
+        ):
+            st.session_state.mode = "admin"
+            st.rerun()
 
     # ── Study Tools ────────────────────────────────────────────
     st.markdown("---")
@@ -960,6 +977,16 @@ st.markdown("""
     <div class="swsa-desc">AI-Powered Student Welfare Support</div>
 </div>
 """, unsafe_allow_html=True)
+
+
+#  ADMIN MODE — render the admin panel (gated server-side, not just by sidebar)
+if st.session_state.mode == "admin":
+    if not is_admin(st.session_state.user):
+        st.error("You don't have admin access.")
+        st.session_state.mode = "chat"
+        st.stop()
+    render_admin_panel()
+    st.stop()
 
 
 #  STUDY TOOLS MODE — render the document-upload page instead of the chat
