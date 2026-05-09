@@ -57,7 +57,8 @@ def get_crisis_resources() -> list[dict]:
 
 
 def get_external_resources(categories: list[str]) -> dict:
-    """Retrieve relevant external resources (job boards, housing platforms)."""
+    """Retrieve relevant external resources (job boards, housing platforms,
+    NHS / GP links)."""
     kb = load_knowledge_base()
     external = kb.get("external_resources", {})
     result = {}
@@ -67,6 +68,8 @@ def get_external_resources(categories: list[str]) -> dict:
             result["job_platforms"] = external["finance"].get("job_platforms", [])
         if category == "housing" and "housing" in external:
             result["housing_platforms"] = external["housing"].get("platforms", [])
+        if category == "general_wellbeing" and "health" in external:
+            result["nhs_links"] = external["health"].get("nhs_links", [])
     return result
 
 

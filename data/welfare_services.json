@@ -289,6 +289,15 @@
         {"name": "Amber Student", "url": "https://amberstudent.com", "description": "Student accommodation booking platform."},
         {"name": "Home.co.uk", "url": "https://www.home.co.uk", "description": "Property search and rental listings."}
       ]
+    },
+    "health": {
+      "nhs_links": [
+        {"name": "Find a GP near you (official NHS)", "url": "https://www.nhs.uk/service-search/find-a-gp", "description": "Postcode-based search for NHS GP surgeries that take new patients in your area."},
+        {"name": "How to register with a GP (official NHS)", "url": "https://www.nhs.uk/nhs-services/gps/how-to-register-with-a-gp-surgery/", "description": "Step-by-step guide to registering — includes what documents you'll need."},
+        {"name": "NHS app (Android & iOS)", "url": "https://www.nhs.uk/nhs-app/", "description": "Use the official NHS app to register, book GP appointments, get prescriptions, and view your NHS number once registered."},
+        {"name": "Find an NHS dentist", "url": "https://www.nhs.uk/service-search/find-a-dentist", "description": "Postcode search for NHS dentists taking new patients."},
+        {"name": "NHS 111 online (non-emergency)", "url": "https://111.nhs.uk", "description": "If you need medical advice but it's not an emergency, get assessed online without waiting on the phone."}
+      ]
     }
   }
 }
