@@ -609,6 +609,23 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
+#  SCROLL-TO-TOP — applies to *every* render (showcase, auth, admin,
+#  study, community, settings, chat). Streamlit otherwise tends to keep
+#  the previous scroll position after a rerun, leaving users staring at
+#  the bottom of the new page. The <img onerror> trick survives
+#  Streamlit's HTML sanitisation (which strips <script> tags).
+st.markdown(
+    '<div id="swsa-top"></div>'
+    '<img src="" onerror="'
+    "var t=document.getElementById(\'swsa-top\');"
+    "if(t){t.scrollIntoView({behavior:\'instant\',block:\'start\'});}"
+    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\',block:\'start\'});}},80);"
+    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\',block:\'start\'});}},250);"
+    '" style="display:none">',
+    unsafe_allow_html=True,
+)
+
+
 #  DATABASE — bootstrap schema once per process
 @st.cache_resource
 def _bootstrap_db():
@@ -1005,17 +1022,6 @@ def render_crisis():
         unsafe_allow_html=True,
     )
 
-
-st.markdown(
-    '<div id="swsa-top"></div>'
-    '<img src="" onerror="'
-    "var t=document.getElementById(\'swsa-top\');"
-    "if(t){t.scrollIntoView({behavior:\'instant\'});}"
-    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\'});}},150);"
-    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\'});}},400);"
-    '" style="display:none">',
-    unsafe_allow_html=True,
-)
 
 #  HERO LOGO — S.W.S.A.
 # Only render the hero in chat mode. Admin / Study / Community / Settings

@@ -336,17 +336,30 @@ def render_showcase() -> None:
     st.markdown(_SHOWCASE_CSS, unsafe_allow_html=True)
     st.markdown('<div class="swsa-showcase">', unsafe_allow_html=True)
 
-    # ── Hero ──────────────────────────────────────────────────
+    # ── Hero (uses the existing SWSA logo, not a gradient headline) ──
     st.markdown(
         """
 <section class="sc-hero">
+    <div class="swsa-logo-row" style="margin-bottom: 0.9rem">
+        <span class="swsa-letter l1">S</span>
+        <span class="swsa-letter l2">W</span>
+        <span class="swsa-letter l3">S</span>
+        <span class="swsa-letter l4">A</span>
+    </div>
+    <div class="swsa-full-name" style="margin-bottom: 1.4rem">
+        <span class="fn1">Student</span>
+        <span class="fn-dot">•</span>
+        <span class="fn2">Welfare</span>
+        <span class="fn-dot">•</span>
+        <span class="fn3">Support</span>
+        <span class="fn-dot">•</span>
+        <span class="fn4">Agent</span>
+    </div>
     <span class="sc-pill">🛡️ AI-powered student welfare</span>
-    <h1 class="sc-headline">Student welfare, redesigned for 2026.</h1>
-    <p class="sc-subhead">
-        S.W.S.A. is a private, conversational AI tutor that listens to what
-        you're going through, points you at the right university service,
-        and turns your study materials into summaries and quizzes — all
-        in one place, available 24/7.
+    <p class="sc-subhead" style="font-size: clamp(1.05rem, 1.7vw, 1.25rem); max-width: 780px; margin-top: 0.6rem">
+        A private, conversational AI tutor that listens to what you're going
+        through, points you at the right university service, and turns your
+        study materials into summaries and quizzes — all in one place, 24/7.
     </p>
     <div class="sc-cta-row" id="sc-cta-anchor"></div>
 </section>
