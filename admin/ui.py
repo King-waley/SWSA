@@ -215,7 +215,6 @@ def _system() -> None:
 
     rows = [
         ("Database", db_kind),
-        ("OpenAI key", "✅ Configured" if config.OPENAI_API_KEY else "❌ Not set"),
         ("Classifier model", config.OPENAI_CLASSIFIER_MODEL),
         ("Response model", config.OPENAI_RESPONSE_MODEL),
         ("Railway env", os.getenv("RAILWAY_ENVIRONMENT") or "(local dev)"),
@@ -226,6 +225,58 @@ def _system() -> None:
         a, b = st.columns([2, 5])
         a.markdown(f"**{label}**")
         b.markdown(value)
+
+    st.markdown("---")
+    st.markdown("### 🔑 OpenAI API Key")
+
+    if config.OPENAI_API_KEY:
+        key = config.OPENAI_API_KEY
+        masked = f"{key[:7]}…{key[-4:]}" if len(key) > 12 else "(set)"
+        st.success(f"AI mode is **active** — current key: `{masked}`")
+    else:
+        st.warning("AI mode is **OFF** — no API key configured. The chat will fall back to templates.")
+
+    new_key = st.text_input(
+        "Update or set API key",
+        type="password",
+        placeholder="sk-proj-…",
+        help=(
+            "Hot-swaps the key for the running process. "
+            "For a permanent change set OPENAI_API_KEY in Railway → Variables."
+        ),
+        key="admin_api_key_input",
+    )
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button(
+            "💾 Save key",
+            type="primary",
+            use_container_width=True,
+            key="admin_save_api_key",
+        ):
+            if new_key and new_key.strip():
+                config.OPENAI_API_KEY = new_key.strip()
+                os.environ["OPENAI_API_KEY"] = new_key.strip()
+                st.success("Key saved. New chat replies will use this key.")
+                st.rerun()
+            else:
+                st.warning("Paste a key first.")
+    with col_b:
+        if st.button(
+            "🗑 Clear key (disable AI)",
+            use_container_width=True,
+            key="admin_clear_api_key",
+        ):
+            config.OPENAI_API_KEY = ""
+            os.environ.pop("OPENAI_API_KEY", None)
+            st.info("Key cleared. Chats will use template fallback.")
+            st.rerun()
+
+    st.caption(
+        "ℹ️ A hot-swap only persists until the next redeploy. To make a "
+        "change survive deploys, edit `OPENAI_API_KEY` in Railway → Variables."
+    )
 
     st.markdown("---")
     st.markdown("### Available models")

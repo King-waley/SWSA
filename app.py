@@ -829,46 +829,7 @@ with st.sidebar:
                     else:
                         st.success("Password updated.")
 
-    # ── OpenAI API Key (admin only) ────────────────────────────
-    # Regular users shouldn't be able to see, change, or even know about
-    # the API key — that's an operator concern. Admins still get the
-    # input here so they can hot-swap the key without redeploying.
-    if is_admin(_user):
-        st.markdown("---")
-        st.markdown("##### 🔑 OpenAI API Key")
-        api_key_input = st.text_input(
-            "key", type="password",
-            placeholder="Paste your API key here",
-            help="Enables AI-powered responses. Without it, template mode is used.",
-            label_visibility="collapsed",
-            key="api_key_field",
-        )
-        if st.button(
-            "Activate AI ✅",
-            use_container_width=True,
-            type="primary",
-            key="activate_btn",
-        ):
-            if api_key_input and api_key_input.strip():
-                config.OPENAI_API_KEY = api_key_input.strip()
-                os.environ["OPENAI_API_KEY"] = api_key_input.strip()
-                st.session_state.agent = MainAgent()
-                st.rerun()
-            else:
-                st.warning("Please paste a key first.", icon="⚠️")
-        # Also handle if key was already set previously
-        if (
-            not config.OPENAI_API_KEY
-            and api_key_input
-            and api_key_input != config.OPENAI_API_KEY
-        ):
-            config.OPENAI_API_KEY = api_key_input.strip()
-            os.environ["OPENAI_API_KEY"] = api_key_input.strip()
-            st.session_state.agent = MainAgent()
-        if config.OPENAI_API_KEY:
-            st.success("AI Mode Active", icon="✅")
-        else:
-            st.caption("Paste your key and click **Activate AI** to enable.")
+    # API key management lives in the Admin Panel → System tab.
 
     st.markdown("---")
     st.markdown("##### 📊 Your Session")
