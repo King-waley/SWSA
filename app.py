@@ -1005,33 +1005,8 @@ if not st.session_state.started:
             unsafe_allow_html=True,
         )
 
-        # ── Quick Action Cards (only after mood is selected) ──
-        st.markdown('<div class="glass-card"><h4>What do you need help with?</h4>', unsafe_allow_html=True)
-
-        actions = [
-            ("💚", "Mental Health",    "Stress, anxiety, loneliness, burnout",    "I'm feeling really stressed and anxious lately"),
-            ("💰", "Money Worries",    "Rent, debt, budgeting, jobs",            "I'm struggling financially and can't afford my expenses"),
-            ("📚", "Academic Help",    "Exams, deadlines, essays, extensions",   "I'm falling behind on my coursework and need help"),
-            ("🏠", "Housing Issues",   "Landlord, repairs, finding a flat",      "I'm having problems with my accommodation"),
-            ("🌟", "General Wellbeing","Health, relationships, fitting in",      "I feel isolated and need someone to talk to"),
-            ("🆘", "Urgent Support",   "Crisis help, immediate assistance",      "I need urgent help right now"),
-        ]
-
-        r1 = st.columns(3)
-        r2 = st.columns(3)
-        cols = r1 + r2
-        for i, (icon, title, desc, prompt) in enumerate(actions):
-            with cols[i]:
-                if st.button(f"{icon}\n**{title}**\n{desc}", key=f"qa_{title}", use_container_width=True):
-                    st.session_state.started = True
-                    st.session_state.pending_input = prompt
-                    st.session_state.messages = []
-                    st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
         # Chat input on landing page
-        user_input_landing = st.chat_input("Or just type what's on your mind...")
+        user_input_landing = st.chat_input("Tell S.W.S.A. what's on your mind…")
         if user_input_landing:
             st.session_state.started = True
             st.session_state.messages = []
