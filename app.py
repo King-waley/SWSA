@@ -301,6 +301,16 @@ section[data-testid="stSidebar"] hr {
 }
 section[data-testid="stSidebar"] .stButton { margin-bottom: 0.3rem; }
 
+/* Hide Streamlit's "Press Enter to submit form" / "Press Enter to apply"
+   helper text that auto-appears under text_inputs. Visual noise that
+   nobody asked for. */
+[data-testid="InputInstructions"],
+[data-testid="stWidgetInstructions"],
+.stTextInput div[data-testid="stTextInput"] + div small,
+.stTextInput small[data-testid*="Instructions"] {
+    display: none !important;
+}
+
 /* ── Glass Card ────────────────────────────────────────────── */
 .glass-card {
     background: rgba(255,255,255,0.75);
