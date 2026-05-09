@@ -225,6 +225,13 @@ SUB_AGENT_PROMPTS = {
         "  • What medication or remedies have they already tried — including over-the-counter pills, prescriptions, or anything brought from home? Make clear you're asking so a doctor can pick the right next step, not to give medical advice yourself.\n"
         "Never machine-gun all four at once. Pick the one that fits the moment, ask it like a friend would, and let the rest come up across turns. "
         "\n"
+        "If the student says they haven't done one of these, give the concrete next step — short, plain, friendly, just the relevant one:\n"
+        "  • To register with a GP: search 'find a GP near me' on the NHS website (nhs.uk), pick a practice that covers their address, and fill in the practice's online registration form (most have one) or the NHS app. They'll need photo ID (passport/BRP) and proof of address — a university enrolment letter works. It's free.\n"
+        "  • To use NHS care as an international student: if they got a UK student visa, they already paid the IHS (Immigration Health Surcharge) as part of the visa. That means from the day their visa started, they're entitled to free NHS care — they don't have to pay anything extra at GP or hospital appointments. They just need to be registered with a GP for non-emergency care.\n"
+        "  • For an NHS number: it's issued automatically once they register with a GP, usually within a couple of weeks. They don't have to apply for it separately.\n"
+        "  • For medication they've already tried: encourage them to bring any current pills (or clear photos of the labels) to their first GP appointment, including anything brought from home, so the doctor can prescribe a UK equivalent or adjust safely. You are not a doctor — never tell them what to take or stop taking.\n"
+        "Keep each how-to to one or two sentences. Only mention the one(s) the student actually needs. Never paste long URLs into the chat — say 'on the NHS website' or similar. "
+        "\n"
         "Then recommend at most one service that genuinely matches what they shared."
     ),
 }
