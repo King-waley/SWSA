@@ -33,6 +33,7 @@ from db.conversations import (
     list_conversations,
     update_title,
 )
+from community.ui import render_community_page
 from study.extractor import build_augmented_message, extract_attachments
 from study.ui import render_study_tools
 
@@ -683,7 +684,7 @@ if "feedback_given" not in st.session_state:
 if "conversation_id" not in st.session_state:
     st.session_state.conversation_id = None
 if "mode" not in st.session_state:
-    st.session_state.mode = "chat"  # 'chat' | 'study' | 'admin' | 'settings'
+    st.session_state.mode = "chat"  # 'chat' | 'study' | 'admin' | 'settings' | 'community'
 
 
 def _start_new_chat() -> None:
@@ -776,6 +777,16 @@ with st.sidebar:
         disabled=_mode == "study",
     ):
         st.session_state.mode = "study"
+        st.rerun()
+
+    if st.button(
+        "💬 Community",
+        use_container_width=True,
+        type="primary" if _mode == "community" else "secondary",
+        key="nav_community_btn",
+        disabled=_mode == "community",
+    ):
+        st.session_state.mode = "community"
         st.rerun()
 
     if st.button(
@@ -962,6 +973,12 @@ if st.session_state.mode == "admin":
 #  ACCOUNT SETTINGS MODE — full-page profile + password page
 if st.session_state.mode == "settings":
     render_account_page()
+    st.stop()
+
+
+#  COMMUNITY MODE — student-run WhatsApp support groups
+if st.session_state.mode == "community":
+    render_community_page()
     st.stop()
 
 

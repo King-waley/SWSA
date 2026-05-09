@@ -67,6 +67,41 @@ CATEGORY_KEYWORDS = {
     ],
 }
 
+# ── Community / WhatsApp support groups ──────────────────────────────
+# Edit these to point at the right invite links. The Community page
+# renders one card per entry. To remove a group, delete or comment out
+# its entry. To add a group, append a new dict.
+SUPPORT_GROUPS = [
+    {
+        "icon": "💚",
+        "name": "Mental Health Peer Support",
+        "description": (
+            "A safe, judgement-free space to talk with other students about "
+            "stress, anxiety, loneliness, and how you're really doing."
+        ),
+        "url": "https://chat.whatsapp.com/JV93Vx7SCqzCfbl7cNWfhf",
+    },
+    {
+        "icon": "📚",
+        "name": "Academic Support Circle",
+        "description": (
+            "Study tips, deadline panic, exam revision, dissertation help — "
+            "ask classmates and share resources."
+        ),
+        "url": "https://chat.whatsapp.com/DVy1n7cJpau7jBpUvXff5u",
+    },
+    {
+        "icon": "🌟",
+        "name": "General Student Community",
+        "description": (
+            "All-purpose chat for students — make friends, ask questions about "
+            "uni life, share opportunities, find your people."
+        ),
+        "url": "https://chat.whatsapp.com/GSd1Zl1Bz7Y9jSpyEQ7XZq",
+    },
+]
+
+
 SYSTEM_PROMPT = """You are S.W.S.A., a compassionate AI Student Welfare Support Agent for a university.
 Think of yourself as a caring friend who happens to know what support is available — not a brochure.
 
