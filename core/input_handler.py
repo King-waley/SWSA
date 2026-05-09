@@ -17,8 +17,14 @@ def validate_input(user_input: str) -> tuple[bool, str]:
         return False, "Please type a message so I can help you."
     if len(user_input.strip()) < 2:
         return False, "Could you tell me a bit more about what you need help with?"
-    if len(user_input.strip()) > 2000:
-        return False, "Your message is quite long. Could you summarise your main concern?"
+    # The hard cap accommodates messages that include extracted text from
+    # attached files (PDFs/DOCX). The study extractor caps each file at
+    # 12K chars and 30K total, so anything well above that is unexpected.
+    if len(user_input.strip()) > 80_000:
+        return False, (
+            "That's a lot of text — please trim the attachment or paste a "
+            "shorter excerpt so I can help you properly."
+        )
     return True, ""
 
 
