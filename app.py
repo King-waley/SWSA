@@ -3,14 +3,25 @@
 import logging
 import sys
 import os
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
+import extra_streamlit_components as stx
+
 import config
 from config import CATEGORY_LABELS
 from agents.main_agent import MainAgent
-from auth import change_password, update_profile
+from auth import (
+    SESSION_COOKIE_NAME,
+    SESSION_DAYS,
+    change_password,
+    create_session,
+    delete_session,
+    get_session_user,
+    update_profile,
+)
 from auth.ui import render_auth_page
 from db import init_db
 from db.conversations import (
@@ -588,10 +599,41 @@ if _db_error:
     st.stop()
 
 
+#  COOKIE-BACKED SESSION — keep the user logged in across page refreshes
+@st.cache_resource
+def _cookies():
+    return stx.CookieManager(key="swsa_cookie_mgr")
+
+
+cookies = _cookies()
+_session_token = cookies.get(SESSION_COOKIE_NAME)
+
+# If session_state has no user but the browser has a session cookie,
+# restore the user from the DB. This is what makes refresh keep you logged in.
+if (
+    "user" not in st.session_state or st.session_state.user is None
+) and _session_token:
+    _restored = get_session_user(_session_token)
+    if _restored is not None:
+        st.session_state.user = _restored
+
+
 #  AUTH GATE — render login/signup screen until the user is logged in
 if "user" not in st.session_state or st.session_state.user is None:
     render_auth_page()
     st.stop()
+
+
+# User is logged in. If the browser doesn't have a session cookie yet
+# (fresh login flow), issue one and store the token in the cookie.
+if not _session_token:
+    _new_token = create_session(st.session_state.user.id)
+    cookies.set(
+        SESSION_COOKIE_NAME,
+        _new_token,
+        expires_at=datetime.utcnow() + timedelta(days=SESSION_DAYS),
+    )
+    _session_token = _new_token
 
 
 #  SESSION STATE
@@ -678,20 +720,6 @@ with st.sidebar:
     _display_name = _user.full_name or _user.username
     st.markdown(f"##### 👤 Signed in")
     st.markdown(f"**{_display_name}**  \n`@{_user.username}`")
-    if st.button("🚪 Log out", use_container_width=True, key="logout_btn"):
-        for _k in (
-            "user",
-            "agent",
-            "messages",
-            "started",
-            "mood",
-            "interaction_count",
-            "categories_helped",
-            "feedback_given",
-            "conversation_id",
-        ):
-            st.session_state.pop(_k, None)
-        st.rerun()
 
     # ── Study Tools ────────────────────────────────────────────
     st.markdown("---")
@@ -841,6 +869,30 @@ with st.sidebar:
 """)
 
     st.markdown("---")
+    if st.button("🚪 Log out", use_container_width=True, key="logout_btn"):
+        # Invalidate the server-side session and clear the cookie so a
+        # refresh after logout doesn't auto-restore the user.
+        delete_session(_session_token)
+        try:
+            cookies.delete(SESSION_COOKIE_NAME)
+        except Exception:
+            pass
+        for _k in (
+            "user",
+            "agent",
+            "messages",
+            "started",
+            "mood",
+            "interaction_count",
+            "categories_helped",
+            "feedback_given",
+            "conversation_id",
+            "mode",
+            "study",
+        ):
+            st.session_state.pop(_k, None)
+        st.rerun()
+
     st.caption("⚠️ S.W.S.A. provides guidance only. Not a substitute for professional help. In emergencies call 999.")
 
 

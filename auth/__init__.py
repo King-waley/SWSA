@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import re
+import secrets
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 import bcrypt
 
 from db import SessionLocal
-from db.models import User
+from db.models import User, UserSession
 
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]{3,50}$")
 
@@ -133,3 +135,49 @@ def change_password(
         user.password_hash = _hash_password(new_password)
         session.commit()
         return True, None
+
+
+# ── Browser sessions (cookie-backed login persistence) ────────────────
+
+
+SESSION_COOKIE_NAME = "swsa_session"
+SESSION_DAYS = 30
+
+
+def create_session(user_id: int, days: int = SESSION_DAYS) -> str:
+    """Issue a fresh opaque session token and persist it. Returns the token."""
+    token = secrets.token_urlsafe(48)
+    expires_at = datetime.utcnow() + timedelta(days=days)
+    with SessionLocal() as session:
+        sess = UserSession(user_id=user_id, token=token, expires_at=expires_at)
+        session.add(sess)
+        session.commit()
+    return token
+
+
+def get_session_user(token: str | None) -> UserInfo | None:
+    """Return the user the token belongs to, or None if invalid/expired."""
+    if not token:
+        return None
+    with SessionLocal() as session:
+        sess = (
+            session.query(UserSession)
+            .filter(
+                UserSession.token == token,
+                UserSession.expires_at > datetime.utcnow(),
+            )
+            .first()
+        )
+        if sess is None:
+            return None
+        user = session.query(User).filter(User.id == sess.user_id).first()
+        return _to_info(user) if user else None
+
+
+def delete_session(token: str | None) -> None:
+    """Invalidate a token (called on logout). Safe to call with None."""
+    if not token:
+        return
+    with SessionLocal() as session:
+        session.query(UserSession).filter(UserSession.token == token).delete()
+        session.commit()

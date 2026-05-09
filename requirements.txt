@@ -6,3 +6,4 @@ psycopg2-binary>=2.9.9
 bcrypt>=4.1.0
 pypdf>=4.0.0
 python-docx>=1.1.0
+extra-streamlit-components>=0.1.71
