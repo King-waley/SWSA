@@ -10,8 +10,17 @@ import streamlit as st
 import config
 from config import CATEGORY_LABELS
 from agents.main_agent import MainAgent
+from auth import change_password, update_profile
 from auth.ui import render_auth_page
 from db import init_db
+from db.conversations import (
+    add_message,
+    create_conversation,
+    delete_conversation,
+    get_messages,
+    list_conversations,
+    update_title,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -555,6 +564,48 @@ if "categories_helped" not in st.session_state:
     st.session_state.categories_helped = set()
 if "feedback_given" not in st.session_state:
     st.session_state.feedback_given = set()
+if "conversation_id" not in st.session_state:
+    st.session_state.conversation_id = None
+
+
+def _start_new_chat() -> None:
+    """Reset session state to a blank chat (landing-page) view."""
+    st.session_state.conversation_id = None
+    st.session_state.messages = []
+    st.session_state.started = False
+    st.session_state.mood = None
+    st.session_state.interaction_count = 0
+    st.session_state.categories_helped = set()
+    st.session_state.feedback_given = set()
+    st.session_state.agent = MainAgent()
+
+
+def _load_conversation(conversation_id: int) -> None:
+    """Replace session state with the messages from a saved conversation."""
+    db_messages = get_messages(conversation_id)
+    st.session_state.conversation_id = conversation_id
+    st.session_state.messages = db_messages
+    st.session_state.started = True
+    st.session_state.mood = None
+    st.session_state.feedback_given = set()
+    # Recompute the per-session metrics from the loaded history.
+    st.session_state.interaction_count = sum(
+        1 for m in db_messages if m["role"] == "user"
+    )
+    cats: set[str] = set()
+    for m in db_messages:
+        meta = m.get("metadata") or {}
+        for c in meta.get("categories", []) or []:
+            cats.add(c)
+    st.session_state.categories_helped = cats
+    # Replay history into a fresh agent so the LLM has context for the next turn.
+    new_agent = MainAgent()
+    for m in db_messages:
+        if m["role"] in ("user", "assistant"):
+            new_agent.conversation_history.append(
+                {"role": m["role"], "content": m["content"]}
+            )
+    st.session_state.agent = new_agent
 
 
 #  SIDEBAR
@@ -588,9 +639,90 @@ with st.sidebar:
             "interaction_count",
             "categories_helped",
             "feedback_given",
+            "conversation_id",
         ):
             st.session_state.pop(_k, None)
         st.rerun()
+
+    # ── Conversations ──────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("##### 💬 Conversations")
+    if st.button(
+        "➕ New chat", use_container_width=True, type="primary", key="new_chat_btn"
+    ):
+        _start_new_chat()
+        st.rerun()
+
+    _conversations = list_conversations(_user.id)
+    if not _conversations:
+        st.caption("No past conversations yet — start one below!")
+    else:
+        for _conv in _conversations:
+            _is_active = _conv["id"] == st.session_state.conversation_id
+            _bullet = "▸ " if _is_active else ""
+            _col_open, _col_del = st.columns([5, 1])
+            with _col_open:
+                if st.button(
+                    f"{_bullet}{_conv['title']}",
+                    key=f"open_conv_{_conv['id']}",
+                    use_container_width=True,
+                    disabled=_is_active,
+                ):
+                    _load_conversation(_conv["id"])
+                    st.rerun()
+            with _col_del:
+                if st.button(
+                    "🗑",
+                    key=f"del_conv_{_conv['id']}",
+                    help="Delete this conversation",
+                ):
+                    delete_conversation(_conv["id"], _user.id)
+                    if st.session_state.conversation_id == _conv["id"]:
+                        _start_new_chat()
+                    st.rerun()
+
+    # ── Account settings ───────────────────────────────────────
+    st.markdown("---")
+    with st.expander("⚙️ Account settings"):
+        with st.form("profile_form"):
+            st.markdown("**Profile**")
+            _new_full_name = st.text_input(
+                "Full name", value=_user.full_name or "", key="settings_fullname"
+            )
+            _new_email = st.text_input(
+                "Email", value=_user.email or "", key="settings_email"
+            )
+            if st.form_submit_button("Save profile"):
+                _updated, _err = update_profile(
+                    _user.id, full_name=_new_full_name, email=_new_email
+                )
+                if _err:
+                    st.error(_err)
+                else:
+                    st.session_state.user = _updated
+                    st.success("Profile updated.")
+                    st.rerun()
+
+        with st.form("password_form"):
+            st.markdown("**Change password**")
+            _curr_pw = st.text_input(
+                "Current password", type="password", key="settings_curr_pw"
+            )
+            _new_pw = st.text_input(
+                "New password", type="password", key="settings_new_pw"
+            )
+            _new_pw2 = st.text_input(
+                "Confirm new password", type="password", key="settings_new_pw2"
+            )
+            if st.form_submit_button("Change password"):
+                if _new_pw != _new_pw2:
+                    st.error("New passwords don't match.")
+                else:
+                    _ok, _err = change_password(_user.id, _curr_pw, _new_pw)
+                    if _err:
+                        st.error(_err)
+                    else:
+                        st.success("Password updated.")
 
     st.markdown("---")
 
@@ -867,9 +999,22 @@ else:
     active_input = user_input or pending
 
     if active_input:
+        # Create a conversation row on the user's first message of this chat,
+        # and use that message as the auto-title.
+        if st.session_state.conversation_id is None:
+            st.session_state.conversation_id = create_conversation(
+                user_id=st.session_state.user.id,
+                first_user_message=active_input,
+            )
+        elif not st.session_state.messages:
+            # Defensive: conversation exists but has no messages yet (e.g. created
+            # then session resumed). Use this message as the title.
+            update_title(st.session_state.conversation_id, active_input)
+
         with st.chat_message("user", avatar="🧑‍🎓"):
             st.markdown(active_input)
         st.session_state.messages.append({"role": "user", "content": active_input, "metadata": None})
+        add_message(st.session_state.conversation_id, "user", active_input)
 
         with st.chat_message("assistant", avatar="🛡️"):
             stream = st.session_state.agent.process_message_stream(active_input)
@@ -931,4 +1076,10 @@ else:
         st.session_state.messages.append({
             "role": "assistant", "content": full_response, "metadata": msg_metadata,
         })
+        add_message(
+            st.session_state.conversation_id,
+            "assistant",
+            full_response,
+            msg_metadata,
+        )
         st.rerun()

@@ -95,3 +95,41 @@ def get_user(user_id: int) -> UserInfo | None:
     with SessionLocal() as session:
         user = session.query(User).filter(User.id == user_id).first()
         return _to_info(user) if user else None
+
+
+def update_profile(
+    user_id: int,
+    full_name: str | None = None,
+    email: str | None = None,
+) -> tuple[UserInfo | None, str | None]:
+    """Update the user's full name and/or email. Empty strings clear the field."""
+    with SessionLocal() as session:
+        user = session.query(User).filter(User.id == user_id).first()
+        if user is None:
+            return None, "Account not found."
+        if full_name is not None:
+            user.full_name = full_name.strip() or None
+        if email is not None:
+            user.email = email.strip() or None
+        session.commit()
+        session.refresh(user)
+        return _to_info(user), None
+
+
+def change_password(
+    user_id: int,
+    current_password: str,
+    new_password: str,
+) -> tuple[bool, str | None]:
+    """Verify current password and set a new one. Returns (ok, error_message)."""
+    if len(new_password or "") < 6:
+        return False, "New password must be at least 6 characters."
+    with SessionLocal() as session:
+        user = session.query(User).filter(User.id == user_id).first()
+        if user is None:
+            return False, "Account not found."
+        if not _verify_password(current_password, user.password_hash):
+            return False, "Current password is incorrect."
+        user.password_hash = _hash_password(new_password)
+        session.commit()
+        return True, None
