@@ -1037,18 +1037,6 @@ if not st.session_state.started:
             st.session_state.pending_input = user_input_landing
             st.rerun()
 
-    # ── Features Strip (always visible) ─────────────────────
-    st.markdown('<div class="sep"></div>', unsafe_allow_html=True)
-    f1, f2, f3, f4 = st.columns(4)
-    with f1:
-        st.markdown("**🔒 Confidential**\n\nYour conversations are private and secure.")
-    with f2:
-        st.markdown("**🤖 AI-Powered**\n\nSmart classification and personalised guidance.")
-    with f3:
-        st.markdown("**⚡ Instant**\n\nGet recommendations in seconds, 24/7.")
-    with f4:
-        st.markdown("**🎯 Accurate**\n\nMatched to real university services and resources.")
-
     st.markdown('<div class="sep"></div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="swsa-footer">Built with care for students, by students. '
