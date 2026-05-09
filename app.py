@@ -24,6 +24,7 @@ from auth.admin import is_admin
 from auth.ui import render_auth_page
 from admin.ui import render_admin_panel
 from account.ui import render_account_page
+from showcase.ui import render_showcase
 from db import init_db, is_persistent_db, is_running_on_railway
 from db.conversations import (
     add_message,
@@ -665,8 +666,14 @@ if (
         st.session_state.user = _restored
 
 
-#  AUTH GATE — render login/signup screen until the user is logged in
+#  AUTH GATE — render login/signup screen until the user is logged in.
+# Unauthenticated visitors see a marketing showcase first; clicking
+# "Get Started" sets `showcase_dismissed=True` so they fall through to
+# the actual auth form.
 if "user" not in st.session_state or st.session_state.user is None:
+    if not st.session_state.get("showcase_dismissed", False):
+        render_showcase()
+        st.stop()
     render_auth_page()
     st.stop()
 
