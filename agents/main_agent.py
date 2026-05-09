@@ -10,8 +10,10 @@ from core.input_handler import detect_crisis, preprocess_input, validate_input
 from core.issue_detector import classify_issue
 
 
-# Cap how many sub-agents respond per turn to keep replies focused.
-MAX_SUB_AGENTS_PER_TURN = 2
+# Only one sub-agent replies per turn so a single voice drives the conversation.
+# Multiple categories from the classifier are addressed across turns as the
+# user shares more context.
+MAX_SUB_AGENTS_PER_TURN = 1
 
 
 class MainAgent:

@@ -14,7 +14,7 @@ def stream_openai_response(
     system_message: str,
     user_message: str,
     conversation_history: list[dict] | None = None,
-    max_tokens: int = 600,
+    max_tokens: int = 350,
     temperature: float = 0.7,
 ):
     """Stream a ChatGPT completion. Yields text chunks. Caller handles fallback."""
