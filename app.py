@@ -599,13 +599,10 @@ if _db_error:
     st.stop()
 
 
-#  COOKIE-BACKED SESSION — keep the user logged in across page refreshes
-@st.cache_resource
-def _cookies():
-    return stx.CookieManager(key="swsa_cookie_mgr")
-
-
-cookies = _cookies()
+#  COOKIE-BACKED SESSION — keep the user logged in across page refreshes.
+# CookieManager is itself a Streamlit component, so it must NOT be wrapped
+# in @st.cache_resource. The `key` argument handles dedup across reruns.
+cookies = stx.CookieManager(key="swsa_cookie_mgr")
 _session_token = cookies.get(SESSION_COOKIE_NAME)
 
 # If session_state has no user but the browser has a session cookie,
