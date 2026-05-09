@@ -73,29 +73,31 @@ CATEGORY_KEYWORDS = {
 # its entry. To add a group, append a new dict.
 SUPPORT_GROUPS = [
     {
-        "icon": "💚",
-        "name": "Mental Health Peer Support",
+        "icon": "🇳🇬",
+        "name": "Adaba — Nigerian Community",
         "description": (
-            "A safe, judgement-free space to talk with other students about "
-            "stress, anxiety, loneliness, and how you're really doing."
+            "A home-away-from-home for Nigerian students. Chat in pidgin or "
+            "English, swap recipes, find roommates, share jollof shops, and "
+            "support each other through uni life abroad."
         ),
         "url": "https://chat.whatsapp.com/JV93Vx7SCqzCfbl7cNWfhf",
     },
     {
         "icon": "📚",
-        "name": "Academic Support Circle",
+        "name": "Academic Support",
         "description": (
-            "Study tips, deadline panic, exam revision, dissertation help — "
-            "ask classmates and share resources."
+            "Get help with coursework, deadlines, exams, and study skills. "
+            "Ask classmates, share past papers and notes, form study groups."
         ),
         "url": "https://chat.whatsapp.com/DVy1n7cJpau7jBpUvXff5u",
     },
     {
-        "icon": "🌟",
-        "name": "General Student Community",
+        "icon": "🎓",
+        "name": "Study & Revision Hub",
         "description": (
-            "All-purpose chat for students — make friends, ask questions about "
-            "uni life, share opportunities, find your people."
+            "Focused on revision sessions, dissertation accountability, and "
+            "exam prep — find study buddies and stay motivated through "
+            "deadline season."
         ),
         "url": "https://chat.whatsapp.com/GSd1Zl1Bz7Y9jSpyEQ7XZq",
     },
