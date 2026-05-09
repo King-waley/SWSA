@@ -21,6 +21,7 @@ from db.conversations import (
     list_conversations,
     update_title,
 )
+from study.ui import render_study_tools
 
 logger = logging.getLogger(__name__)
 
@@ -566,10 +567,13 @@ if "feedback_given" not in st.session_state:
     st.session_state.feedback_given = set()
 if "conversation_id" not in st.session_state:
     st.session_state.conversation_id = None
+if "mode" not in st.session_state:
+    st.session_state.mode = "chat"  # 'chat' | 'study'
 
 
 def _start_new_chat() -> None:
     """Reset session state to a blank chat (landing-page) view."""
+    st.session_state.mode = "chat"
     st.session_state.conversation_id = None
     st.session_state.messages = []
     st.session_state.started = False
@@ -583,6 +587,7 @@ def _start_new_chat() -> None:
 def _load_conversation(conversation_id: int) -> None:
     """Replace session state with the messages from a saved conversation."""
     db_messages = get_messages(conversation_id)
+    st.session_state.mode = "chat"
     st.session_state.conversation_id = conversation_id
     st.session_state.messages = db_messages
     st.session_state.started = True
@@ -642,6 +647,20 @@ with st.sidebar:
             "conversation_id",
         ):
             st.session_state.pop(_k, None)
+        st.rerun()
+
+    # ── Study Tools ────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("##### 📚 Study Tools")
+    st.caption("Upload notes/PDFs → summary, key concepts, or quiz.")
+    if st.button(
+        "Open Study Tools",
+        use_container_width=True,
+        type="primary" if st.session_state.mode == "study" else "secondary",
+        key="open_study_btn",
+        disabled=st.session_state.mode == "study",
+    ):
+        st.session_state.mode = "study"
         st.rerun()
 
     # ── Conversations ──────────────────────────────────────────
@@ -778,14 +797,6 @@ with st.sidebar:
 """)
 
     st.markdown("---")
-    if st.button("🔄  New Conversation", use_container_width=True, type="primary"):
-        for k in ["messages", "started", "mood", "interaction_count", "categories_helped", "feedback_given"]:
-            if k in st.session_state:
-                del st.session_state[k]
-        st.session_state.agent = MainAgent()
-        st.rerun()
-
-    st.markdown("---")
     st.caption("⚠️ S.W.S.A. provides guidance only. Not a substitute for professional help. In emergencies call 999.")
 
 
@@ -856,6 +867,12 @@ st.markdown("""
     <div class="swsa-desc">AI-Powered Student Welfare Support</div>
 </div>
 """, unsafe_allow_html=True)
+
+
+#  STUDY TOOLS MODE — render the document-upload page instead of the chat
+if st.session_state.mode == "study":
+    render_study_tools()
+    st.stop()
 
 
 #  LANDING PAGE
