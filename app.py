@@ -603,6 +603,11 @@ div[data-testid="stChatInput"] textarea {
 def _bootstrap_db():
     try:
         init_db()
+        # Auto-create the admin account from ADMIN_USERNAME / ADMIN_PASSWORD
+        # if those env vars are configured. Safe (idempotent) on every boot.
+        from auth.admin import bootstrap_admin_from_env
+
+        bootstrap_admin_from_env()
         return None
     except Exception as exc:  # noqa: BLE001
         logger.exception("Database initialisation failed")
