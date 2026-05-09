@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 
 from db import SessionLocal
-from db.models import Conversation, Message, User, UserSession
+from db.models import AdminPromotion, Conversation, Message, User, UserSession
 
 
 # ── Read-only ─────────────────────────────────────────────────────────
@@ -39,8 +39,21 @@ def stats() -> dict:
         }
 
 
+def _env_admin_usernames() -> set[str]:
+    """Admin usernames coming from env vars (ADMIN_USERNAME / ADMIN_USERNAMES)."""
+    import os
+
+    raw = os.getenv("ADMIN_USERNAMES", "")
+    names = {u.strip() for u in raw.split(",") if u.strip()}
+    bootstrap = os.getenv("ADMIN_USERNAME", "").strip()
+    if bootstrap:
+        names.add(bootstrap)
+    return names
+
+
 def all_users_with_stats() -> list[dict]:
-    """Every user, with conversation count and last activity timestamp."""
+    """Every user, with conversation count, last activity, and admin flag."""
+    env_admins = _env_admin_usernames()
     with SessionLocal() as session:
         rows = (
             session.query(
@@ -53,6 +66,12 @@ def all_users_with_stats() -> list[dict]:
             .order_by(User.created_at.desc())
             .all()
         )
+
+        # Pull all promoted user_ids in one query so we don't N+1.
+        promoted_ids: set[int] = {
+            r.user_id for r in session.query(AdminPromotion.user_id).all()
+        }
+
         return [
             {
                 "id": user.id,
@@ -62,6 +81,13 @@ def all_users_with_stats() -> list[dict]:
                 "created_at": user.created_at,
                 "conv_count": int(conv_count or 0),
                 "last_active": last_active,
+                "is_admin": (
+                    user.username in env_admins or user.id in promoted_ids
+                ),
+                "admin_source": (
+                    "env" if user.username in env_admins
+                    else ("db" if user.id in promoted_ids else None)
+                ),
             }
             for user, conv_count, last_active in rows
         ]
@@ -201,3 +227,50 @@ def admin_logout_user(user_id: int) -> int:
         )
         session.commit()
         return int(deleted or 0)
+
+
+def admin_create_user(
+    username: str,
+    password: str,
+    full_name: str | None = None,
+    email: str | None = None,
+    make_admin: bool = False,
+) -> tuple[int | None, str | None]:
+    """Admin-side user creation. Reuses the public signup() validation."""
+    from auth import signup
+
+    info, err = signup(username, password, full_name=full_name, email=email)
+    if err:
+        return None, err
+    if make_admin and info is not None:
+        admin_promote(info.id)
+    return (info.id if info else None), None
+
+
+def admin_promote(user_id: int) -> bool:
+    """Mark a user as admin via the admin_promotions table. Idempotent."""
+    with SessionLocal() as session:
+        existing = (
+            session.query(AdminPromotion)
+            .filter(AdminPromotion.user_id == user_id)
+            .first()
+        )
+        if existing is not None:
+            return True
+        session.add(AdminPromotion(user_id=user_id))
+        session.commit()
+        return True
+
+
+def admin_demote(user_id: int) -> bool:
+    """Remove DB-level admin promotion. Note: this can't remove env-var
+    admin status (ADMIN_USERNAME / ADMIN_USERNAMES) — that's set in
+    Railway. Returns True if a row was deleted."""
+    with SessionLocal() as session:
+        n = (
+            session.query(AdminPromotion)
+            .filter(AdminPromotion.user_id == user_id)
+            .delete()
+        )
+        session.commit()
+        return bool(n)

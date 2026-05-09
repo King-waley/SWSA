@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -77,6 +78,45 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     conversation = relationship("Conversation", back_populates="messages")
+
+
+class AdminPromotion(Base):
+    """A user that has been promoted to admin via the admin panel.
+
+    The bootstrap admin (ADMIN_USERNAME env var) and any usernames in
+    ADMIN_USERNAMES are also admin without needing a row here. This
+    table only tracks promotions made at runtime through the UI.
+    """
+
+    __tablename__ = "admin_promotions"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    promoted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class SupportGroup(Base):
+    """A WhatsApp / community support group shown on the Community page."""
+
+    __tablename__ = "support_groups"
+
+    id = Column(Integer, primary_key=True)
+    icon = Column(String(20), nullable=False, default="💬")
+    name = Column(String(120), nullable=False)
+    description = Column(Text, default="")
+    url = Column(String(500), nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False, index=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
 
 class UserSession(Base):

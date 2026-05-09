@@ -1,10 +1,14 @@
-"""Community / WhatsApp support groups page."""
+"""Community / WhatsApp support groups page.
+
+Groups are managed by admins via Admin Panel → Community tab. The page
+reads the active groups from the DB so changes go live without a deploy.
+"""
 
 from __future__ import annotations
 
 import streamlit as st
 
-from config import SUPPORT_GROUPS
+from db.groups import list_groups
 
 
 def render_community_page() -> None:
@@ -23,28 +27,29 @@ def render_community_page() -> None:
         "Groups are run by students, not S.W.S.A. staff."
     )
 
-    if not SUPPORT_GROUPS:
+    groups = list_groups(active_only=True)
+    if not groups:
         st.info(
-            "No support groups are configured yet. An admin can add them in "
-            "`config.py` → `SUPPORT_GROUPS`."
+            "No groups have been published yet. An admin can add them via "
+            "Admin Panel → Community."
         )
         return
 
     st.markdown("---")
 
     # Render groups as cards in a responsive 2-column grid.
-    for i in range(0, len(SUPPORT_GROUPS), 2):
+    for i in range(0, len(groups), 2):
         cols = st.columns(2, gap="medium")
-        for j, group in enumerate(SUPPORT_GROUPS[i : i + 2]):
+        for j, group in enumerate(groups[i : i + 2]):
             with cols[j]:
                 with st.container(border=True):
                     st.markdown(
-                        f"### {group.get('icon', '💬')} {group.get('name', 'Group')}"
+                        f"### {group.get('icon') or '💬'} {group.get('name') or 'Group'}"
                     )
-                    description = group.get("description", "")
+                    description = group.get("description") or ""
                     if description:
                         st.markdown(description)
-                    url = group.get("url", "").strip()
+                    url = (group.get("url") or "").strip()
                     if url:
                         st.link_button(
                             "Open in WhatsApp →",

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import bcrypt
 
 from db import SessionLocal
-from db.models import User, UserSession
+from db.models import AdminPromotion, User, UserSession
 
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]{3,50}$")
 
@@ -22,6 +22,7 @@ class UserInfo:
     username: str
     full_name: str | None
     email: str | None
+    is_admin: bool = False
 
 
 def _hash_password(password: str) -> str:
@@ -35,12 +36,43 @@ def _verify_password(password: str, hashed: str) -> bool:
         return False
 
 
-def _to_info(user: User) -> UserInfo:
+def _username_in_env_admins(username: str) -> bool:
+    """Check whether a username is admin via env vars (ADMIN_USERNAME or
+    ADMIN_USERNAMES). Local-imported here to avoid circular dependency
+    on auth.admin at module load."""
+    import os
+
+    env_single = os.getenv("ADMIN_USERNAME", "").strip()
+    if env_single and username == env_single:
+        return True
+    raw = os.getenv("ADMIN_USERNAMES", "")
+    return username in {u.strip() for u in raw.split(",") if u.strip()}
+
+
+def _is_promoted_admin(session, user_id: int) -> bool:
+    return (
+        session.query(AdminPromotion)
+        .filter(AdminPromotion.user_id == user_id)
+        .first()
+        is not None
+    )
+
+
+def _to_info(user: User, *, session=None) -> UserInfo:
+    """Build a UserInfo. Populates is_admin from env vars + AdminPromotion."""
+    is_admin_flag = _username_in_env_admins(user.username)
+    if not is_admin_flag:
+        if session is not None:
+            is_admin_flag = _is_promoted_admin(session, user.id)
+        else:
+            with SessionLocal() as s:
+                is_admin_flag = _is_promoted_admin(s, user.id)
     return UserInfo(
         id=user.id,
         username=user.username,
         full_name=user.full_name,
         email=user.email,
+        is_admin=is_admin_flag,
     )
 
 
@@ -75,7 +107,7 @@ def signup(
         session.add(user)
         session.commit()
         session.refresh(user)
-        return _to_info(user), None
+        return _to_info(user, session=session), None
 
 
 def login(username: str, password: str) -> tuple[UserInfo | None, str | None]:
@@ -89,14 +121,14 @@ def login(username: str, password: str) -> tuple[UserInfo | None, str | None]:
         user = session.query(User).filter(User.username == username).first()
         if user is None or not _verify_password(password, user.password_hash):
             return None, "Invalid username or password."
-        return _to_info(user), None
+        return _to_info(user, session=session), None
 
 
 def get_user(user_id: int) -> UserInfo | None:
     """Look up a user by id (used to refresh session_state if needed)."""
     with SessionLocal() as session:
         user = session.query(User).filter(User.id == user_id).first()
-        return _to_info(user) if user else None
+        return _to_info(user, session=session) if user else None
 
 
 def update_profile(
@@ -115,7 +147,7 @@ def update_profile(
             user.email = email.strip() or None
         session.commit()
         session.refresh(user)
-        return _to_info(user), None
+        return _to_info(user, session=session), None
 
 
 def change_password(
@@ -171,7 +203,7 @@ def get_session_user(token: str | None) -> UserInfo | None:
         if sess is None:
             return None
         user = session.query(User).filter(User.id == sess.user_id).first()
-        return _to_info(user) if user else None
+        return _to_info(user, session=session) if user else None
 
 
 def delete_session(token: str | None) -> None:

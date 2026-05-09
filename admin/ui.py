@@ -8,9 +8,12 @@ import streamlit as st
 
 import config
 from admin.queries import (
+    admin_create_user,
     admin_delete_conversation,
     admin_delete_user,
+    admin_demote,
     admin_logout_user,
+    admin_promote,
     admin_reset_password,
     all_conversations,
     all_users_with_stats,
@@ -19,6 +22,12 @@ from admin.queries import (
     stats,
 )
 from auth.admin import admin_usernames
+from db.groups import (
+    create_group,
+    delete_group,
+    list_groups,
+    update_group,
+)
 
 
 def _format_dt(dt) -> str:
@@ -42,7 +51,14 @@ def render_admin_panel() -> None:
     )
 
     tabs = st.tabs(
-        ["📊 Dashboard", "👥 Users", "💬 Conversations", "⚙️ System", "⚠️ Danger zone"]
+        [
+            "📊 Dashboard",
+            "👥 Users",
+            "💬 Conversations",
+            "🌐 Community",
+            "⚙️ System",
+            "⚠️ Danger zone",
+        ]
     )
     with tabs[0]:
         _dashboard()
@@ -51,8 +67,10 @@ def render_admin_panel() -> None:
     with tabs[2]:
         _conversations()
     with tabs[3]:
-        _system()
+        _community_groups()
     with tabs[4]:
+        _system()
+    with tabs[5]:
         _danger_zone()
 
 
@@ -91,6 +109,37 @@ def _dashboard() -> None:
 
 
 def _users() -> None:
+    # ── Create new user ──────────────────────────────────────
+    with st.expander("➕ Create new user"):
+        with st.form("admin_create_user_form", clear_on_submit=True):
+            cu_cols = st.columns(2)
+            with cu_cols[0]:
+                cu_username = st.text_input(
+                    "Username", key="cu_username",
+                    help="3-50 chars: letters, numbers, '.', '_', '-'",
+                )
+                cu_full_name = st.text_input("Full name (optional)", key="cu_fullname")
+            with cu_cols[1]:
+                cu_password = st.text_input(
+                    "Password", type="password", key="cu_password",
+                    help="At least 6 characters",
+                )
+                cu_email = st.text_input("Email (optional)", key="cu_email")
+            cu_make_admin = st.checkbox(
+                "Make this user an admin", value=False, key="cu_make_admin"
+            )
+            if st.form_submit_button("Create user", type="primary"):
+                _, err = admin_create_user(
+                    cu_username, cu_password,
+                    full_name=cu_full_name, email=cu_email,
+                    make_admin=cu_make_admin,
+                )
+                if err:
+                    st.error(err)
+                else:
+                    st.success(f"Created @{cu_username.strip()}.")
+                    st.rerun()
+
     users = all_users_with_stats()
     st.markdown(f"### {len(users)} user(s)")
 
@@ -110,9 +159,16 @@ def _users() -> None:
         with st.container(border=True):
             cols = st.columns([3, 3, 2, 2])
 
+            admin_badge = ""
+            if u["is_admin"]:
+                src = u.get("admin_source")
+                tag = "env" if src == "env" else "promoted"
+                admin_badge = f" &nbsp;<span style='background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600'>🛠️ admin · {tag}</span>"
+
             cols[0].markdown(
-                f"**@{u['username']}**  \n"
-                f"{u['full_name'] or '_(no name)_'}"
+                f"**@{u['username']}**{admin_badge}  \n"
+                f"{u['full_name'] or '_(no name)_'}",
+                unsafe_allow_html=True,
             )
             cols[0].caption(f"📧 {u['email'] or '—'}")
 
@@ -122,6 +178,29 @@ def _users() -> None:
             cols[2].metric("Chats", u["conv_count"])
 
             with cols[3]:
+                # Promote / demote (DB-side only — env-set admins are
+                # immutable from the UI, by design).
+                if u["admin_source"] == "env":
+                    st.caption("Admin via env var (not editable here)")
+                elif u["is_admin"]:
+                    if st.button(
+                        "⬇️ Remove admin",
+                        key=f"demote_{u['id']}",
+                        use_container_width=True,
+                    ):
+                        admin_demote(u["id"])
+                        st.success(f"@{u['username']} is no longer an admin.")
+                        st.rerun()
+                else:
+                    if st.button(
+                        "⬆️ Make admin",
+                        key=f"promote_{u['id']}",
+                        use_container_width=True,
+                    ):
+                        admin_promote(u["id"])
+                        st.success(f"@{u['username']} is now an admin.")
+                        st.rerun()
+
                 with st.popover("🔑 Reset password", use_container_width=True):
                     with st.form(f"reset_form_{u['id']}"):
                         new_pw = st.text_input(
@@ -203,6 +282,114 @@ def _conversations() -> None:
                 ):
                     admin_delete_conversation(c["id"])
                     st.rerun()
+
+
+def _community_groups() -> None:
+    st.markdown("### 🌐 WhatsApp / Community groups")
+    st.caption(
+        "Edit the groups shown to students on the Community page. Inactive "
+        "groups stay in the DB but are hidden from students."
+    )
+
+    # ── Add a new group ──────────────────────────────────────
+    with st.expander("➕ Add a new group"):
+        with st.form("admin_add_group_form", clear_on_submit=True):
+            row = st.columns([1, 4])
+            with row[0]:
+                ng_icon = st.text_input("Icon", value="💬", key="ng_icon")
+            with row[1]:
+                ng_name = st.text_input("Name", key="ng_name")
+            ng_desc = st.text_area("Description", key="ng_desc", height=80)
+            ng_url = st.text_input("Invite URL", key="ng_url")
+            ng_active = st.checkbox("Active", value=True, key="ng_active")
+            if st.form_submit_button("Add group", type="primary"):
+                _, err = create_group(
+                    icon=ng_icon, name=ng_name,
+                    description=ng_desc, url=ng_url,
+                    is_active=ng_active,
+                )
+                if err:
+                    st.error(err)
+                else:
+                    st.success(f"Added '{ng_name.strip()}'.")
+                    st.rerun()
+
+    # ── Existing groups ──────────────────────────────────────
+    groups = list_groups(active_only=False)
+    if not groups:
+        st.info("No groups yet. Use **Add a new group** above.")
+        return
+
+    st.markdown(f"#### {len(groups)} group(s)")
+    for g in groups:
+        with st.container(border=True):
+            head_cols = st.columns([1, 5, 2, 2, 1])
+            head_cols[0].markdown(f"# {g['icon']}")
+            head_cols[1].markdown(f"### {g['name']}")
+            head_cols[1].caption(g["description"] or "_(no description)_")
+            head_cols[2].caption(f"🔗 {g['url'][:40]}{'…' if len(g['url']) > 40 else ''}")
+            head_cols[3].caption(
+                "✅ Active" if g["is_active"] else "🚫 Hidden from students"
+            )
+            with head_cols[4]:
+                with st.popover("Edit", use_container_width=True):
+                    with st.form(f"edit_group_{g['id']}"):
+                        e_row = st.columns([1, 4])
+                        with e_row[0]:
+                            new_icon = st.text_input(
+                                "Icon", value=g["icon"], key=f"e_icon_{g['id']}"
+                            )
+                        with e_row[1]:
+                            new_name = st.text_input(
+                                "Name", value=g["name"], key=f"e_name_{g['id']}"
+                            )
+                        new_desc = st.text_area(
+                            "Description",
+                            value=g["description"] or "",
+                            key=f"e_desc_{g['id']}",
+                            height=80,
+                        )
+                        new_url = st.text_input(
+                            "Invite URL", value=g["url"], key=f"e_url_{g['id']}"
+                        )
+                        new_active = st.checkbox(
+                            "Active",
+                            value=bool(g["is_active"]),
+                            key=f"e_active_{g['id']}",
+                        )
+                        new_order = st.number_input(
+                            "Sort order (lower = higher up)",
+                            value=int(g["sort_order"]),
+                            step=10,
+                            key=f"e_order_{g['id']}",
+                        )
+                        save_col, del_col = st.columns(2)
+                        with save_col:
+                            save_clicked = st.form_submit_button(
+                                "💾 Save", type="primary", use_container_width=True
+                            )
+                        with del_col:
+                            del_clicked = st.form_submit_button(
+                                "🗑️ Delete", use_container_width=True
+                            )
+                        if save_clicked:
+                            ok, err = update_group(
+                                g["id"],
+                                icon=new_icon,
+                                name=new_name,
+                                description=new_desc,
+                                url=new_url,
+                                is_active=new_active,
+                                sort_order=int(new_order),
+                            )
+                            if err:
+                                st.error(err)
+                            else:
+                                st.success("Saved.")
+                                st.rerun()
+                        if del_clicked:
+                            delete_group(g["id"])
+                            st.rerun()
 
 
 def _system() -> None:

@@ -606,8 +606,12 @@ def _bootstrap_db():
         # Auto-create the admin account from ADMIN_USERNAME / ADMIN_PASSWORD
         # if those env vars are configured. Safe (idempotent) on every boot.
         from auth.admin import bootstrap_admin_from_env
+        from db.groups import seed_from_config_if_empty
 
         bootstrap_admin_from_env()
+        # On a fresh DB, populate support_groups from the SUPPORT_GROUPS list
+        # in config.py so admins have something to edit.
+        seed_from_config_if_empty()
         return None
     except Exception as exc:  # noqa: BLE001
         logger.exception("Database initialisation failed")

@@ -43,7 +43,9 @@ def admin_usernames() -> set[str]:
 def is_admin(user: UserInfo | None) -> bool:
     if user is None:
         return False
-    return user.username in admin_usernames()
+    # Env-var admin OR DB-promoted admin (UserInfo.is_admin is populated
+    # by auth._to_info from both sources at login / session restore).
+    return user.is_admin or user.username in admin_usernames()
 
 
 def bootstrap_admin_from_env() -> None:
