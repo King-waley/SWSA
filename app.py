@@ -25,7 +25,7 @@ from auth import (
 from auth.admin import is_admin
 from auth.ui import render_auth_page
 from admin.ui import render_admin_panel
-from db import init_db
+from db import init_db, is_persistent_db, is_running_on_railway
 from db.conversations import (
     add_message,
     create_conversation,
@@ -599,6 +599,19 @@ if _db_error:
         f"`{_db_error}`"
     )
     st.stop()
+
+# Loud warning if running on Railway with an ephemeral SQLite fallback —
+# every account / message will be wiped on the next redeploy. This catches
+# the "Postgres add-on exists but isn't linked to the web service" case.
+if is_running_on_railway() and not is_persistent_db():
+    st.error(
+        "⚠️ **Ephemeral storage warning** — this service is running on "
+        "Railway but no `DATABASE_URL` is set, so it's using a local "
+        "SQLite file that will be **wiped on every redeploy**. "
+        "All accounts, conversations, and quiz history will be lost.\n\n"
+        "**Fix:** in Railway → your web service → Variables → "
+        "**Add Reference** → pick the Postgres service → `DATABASE_URL`."
+    )
 
 
 #  COOKIE-BACKED SESSION — keep the user logged in across page refreshes.
