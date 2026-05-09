@@ -74,15 +74,40 @@ header[data-testid="stHeader"] {
     height: auto !important;
 }
 
-/* Force the sidebar collapse/expand button to always be visible and
-   floating above content, so users can never get stuck without it. */
-button[data-testid="stSidebarCollapseButton"],
-button[data-testid="stBaseButton-headerNoPadding"],
-button[kind="header"] {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 999 !important;
+/* On desktop / tablet, force the sidebar permanently visible. This
+   avoids any chance of the user being locked out of it because a
+   collapse button is missing or its selector changed between
+   Streamlit versions. Mobile (<768px) keeps the default collapse-able
+   behaviour to save screen real estate. */
+@media (min-width: 768px) {
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        transform: none !important;
+        visibility: visible !important;
+        min-width: 21rem !important;
+        width: 21rem !important;
+        margin-left: 0 !important;
+    }
+    /* Hide the collapse chevron on desktop since collapse is disabled. */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+}
+
+/* On mobile, make sure the collapse/expand button is visible above the
+   content so users can open the sidebar even when the page is in chat
+   mode. */
+@media (max-width: 767px) {
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="collapsedControl"],
+    button[kind="header"] {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 9999 !important;
+    }
 }
 
 /* ── Global ────────────────────────────────────────────────── */
