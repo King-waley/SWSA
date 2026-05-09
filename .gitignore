@@ -10,6 +10,7 @@ build/
 *.db
 *.sqlite
 *.sqlite3
+_assessment_kit/
 *.pptx
 *.docx
 create_*.py
