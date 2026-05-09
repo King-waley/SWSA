@@ -16,15 +16,14 @@ from agents.main_agent import MainAgent
 from auth import (
     SESSION_COOKIE_NAME,
     SESSION_DAYS,
-    change_password,
     create_session,
     delete_session,
     get_session_user,
-    update_profile,
 )
 from auth.admin import is_admin
 from auth.ui import render_auth_page
 from admin.ui import render_admin_panel
+from account.ui import render_account_page
 from db import init_db, is_persistent_db, is_running_on_railway
 from db.conversations import (
     add_message,
@@ -34,6 +33,7 @@ from db.conversations import (
     list_conversations,
     update_title,
 )
+from study.extractor import build_augmented_message, extract_attachments
 from study.ui import render_study_tools
 
 logger = logging.getLogger(__name__)
@@ -282,6 +282,23 @@ section[data-testid="stSidebar"] .stAlert {
     font-size: 0.55rem; letter-spacing: 2.5px; text-transform: uppercase;
     color: #64748B !important; margin-top: 0.35rem;
 }
+
+/* Sidebar greeting line — sits between logo and nav buttons */
+.sb-greeting {
+    color: #E2E8F0 !important;
+    font-size: 0.9rem;
+    padding: 0.35rem 0 0.6rem;
+    text-align: center;
+}
+.sb-greeting strong { color: #F1F5F9 !important; font-weight: 600; }
+
+/* Tighten sidebar spacing — Streamlit's defaults leave huge gaps */
+section[data-testid="stSidebar"] .stMarkdown { margin-bottom: 0.25rem; }
+section[data-testid="stSidebar"] hr {
+    margin: 0.9rem 0 !important;
+    border-color: rgba(255,255,255,0.07) !important;
+}
+section[data-testid="stSidebar"] .stButton { margin-bottom: 0.3rem; }
 
 /* ── Glass Card ────────────────────────────────────────────── */
 .glass-card {
@@ -666,7 +683,7 @@ if "feedback_given" not in st.session_state:
 if "conversation_id" not in st.session_state:
     st.session_state.conversation_id = None
 if "mode" not in st.session_state:
-    st.session_state.mode = "chat"  # 'chat' | 'study' | 'admin'
+    st.session_state.mode = "chat"  # 'chat' | 'study' | 'admin' | 'settings'
 
 
 def _start_new_chat() -> None:
@@ -711,10 +728,11 @@ def _load_conversation(conversation_id: int) -> None:
     st.session_state.agent = new_agent
 
 
-#  SIDEBAR
+#  SIDEBAR — clean nav-style layout
 with st.sidebar:
-    # Mini SWSA logo
-    st.markdown("""
+    # ── Brand ───────────────────────────────────────────────
+    st.markdown(
+        """
     <div class="sb-logo">
         <div class="sb-logo-row">
             <span class="sb-letter l1">S</span>
@@ -724,59 +742,83 @@ with st.sidebar:
         </div>
         <div class="sb-tag">Student Welfare Support Agent</div>
     </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("---")
+    """,
+        unsafe_allow_html=True,
+    )
 
     _user = st.session_state.user
     _display_name = _user.full_name or _user.username
-    st.markdown(f"##### 👤 Signed in")
-    st.markdown(f"**{_display_name}**  \n`@{_user.username}`")
 
-    # ── Admin Panel (only shown to admin users) ────────────────
-    if is_admin(_user):
-        st.markdown("---")
-        st.markdown("##### 🛠️ Admin")
-        st.caption("You have admin access via `ADMIN_USERNAMES`.")
-        if st.button(
-            "Open Admin Panel",
-            use_container_width=True,
-            type="primary" if st.session_state.mode == "admin" else "secondary",
-            key="open_admin_btn",
-            disabled=st.session_state.mode == "admin",
-        ):
-            st.session_state.mode = "admin"
-            st.rerun()
+    # ── Greeting (no divider above) ─────────────────────────
+    st.markdown(
+        f"<div class='sb-greeting'>👋 Hi, <strong>{_display_name}</strong></div>",
+        unsafe_allow_html=True,
+    )
 
-    # ── Study Tools ────────────────────────────────────────────
-    st.markdown("---")
-    st.markdown("##### 📚 Study Tools")
-    st.caption("Upload notes/PDFs → summary, key concepts, or quiz.")
+    # ── Primary navigation ──────────────────────────────────
+    _mode = st.session_state.mode
+
     if st.button(
-        "Open Study Tools",
+        "💬 Chat",
         use_container_width=True,
-        type="primary" if st.session_state.mode == "study" else "secondary",
-        key="open_study_btn",
-        disabled=st.session_state.mode == "study",
+        type="primary" if _mode == "chat" else "secondary",
+        key="nav_chat_btn",
+        disabled=_mode == "chat",
+    ):
+        st.session_state.mode = "chat"
+        st.rerun()
+
+    if st.button(
+        "📚 Study Tools",
+        use_container_width=True,
+        type="primary" if _mode == "study" else "secondary",
+        key="nav_study_btn",
+        disabled=_mode == "study",
     ):
         st.session_state.mode = "study"
         st.rerun()
 
-    # ── Conversations ──────────────────────────────────────────
-    st.markdown("---")
-    st.markdown("##### 💬 Conversations")
     if st.button(
-        "➕ New chat", use_container_width=True, type="primary", key="new_chat_btn"
+        "⚙️ Account",
+        use_container_width=True,
+        type="primary" if _mode == "settings" else "secondary",
+        key="nav_settings_btn",
+        disabled=_mode == "settings",
+    ):
+        st.session_state.mode = "settings"
+        st.rerun()
+
+    if is_admin(_user):
+        if st.button(
+            "🛠️ Admin",
+            use_container_width=True,
+            type="primary" if _mode == "admin" else "secondary",
+            key="nav_admin_btn",
+            disabled=_mode == "admin",
+        ):
+            st.session_state.mode = "admin"
+            st.rerun()
+
+    # ── Conversations ───────────────────────────────────────
+    st.markdown("---")
+    st.markdown("##### Conversations")
+    if st.button(
+        "➕ New chat",
+        use_container_width=True,
+        key="new_chat_btn",
     ):
         _start_new_chat()
         st.rerun()
 
     _conversations = list_conversations(_user.id)
     if not _conversations:
-        st.caption("No past conversations yet — start one below!")
+        st.caption("No past conversations yet.")
     else:
         for _conv in _conversations:
-            _is_active = _conv["id"] == st.session_state.conversation_id
+            _is_active = (
+                _conv["id"] == st.session_state.conversation_id
+                and _mode == "chat"
+            )
             _bullet = "▸ " if _is_active else ""
             _col_open, _col_del = st.columns([5, 1])
             with _col_open:
@@ -799,80 +841,18 @@ with st.sidebar:
                         _start_new_chat()
                     st.rerun()
 
-    # ── Account settings ───────────────────────────────────────
+    # ── Footer ──────────────────────────────────────────────
     st.markdown("---")
-    with st.expander("⚙️ Account settings"):
-        with st.form("profile_form"):
-            st.markdown("**Profile**")
-            _new_full_name = st.text_input(
-                "Full name", value=_user.full_name or "", key="settings_fullname"
-            )
-            _new_email = st.text_input(
-                "Email", value=_user.email or "", key="settings_email"
-            )
-            if st.form_submit_button("Save profile"):
-                _updated, _err = update_profile(
-                    _user.id, full_name=_new_full_name, email=_new_email
-                )
-                if _err:
-                    st.error(_err)
-                else:
-                    st.session_state.user = _updated
-                    st.success("Profile updated.")
-                    st.rerun()
+    with st.expander("🚨 Emergency contacts"):
+        st.markdown(
+            "**Samaritans** — 116 123 (24/7)  \n"
+            "**Crisis Text** — Text SHOUT to 85258  \n"
+            "**NHS Emergency** — 999  \n"
+            "**NHS Non-Emergency** — 111  \n"
+            "**Campus Security** — 0191 227 4500"
+        )
 
-        with st.form("password_form"):
-            st.markdown("**Change password**")
-            _curr_pw = st.text_input(
-                "Current password", type="password", key="settings_curr_pw"
-            )
-            _new_pw = st.text_input(
-                "New password", type="password", key="settings_new_pw"
-            )
-            _new_pw2 = st.text_input(
-                "Confirm new password", type="password", key="settings_new_pw2"
-            )
-            if st.form_submit_button("Change password"):
-                if _new_pw != _new_pw2:
-                    st.error("New passwords don't match.")
-                else:
-                    _ok, _err = change_password(_user.id, _curr_pw, _new_pw)
-                    if _err:
-                        st.error(_err)
-                    else:
-                        st.success("Password updated.")
-
-    # API key management lives in the Admin Panel → System tab.
-
-    st.markdown("---")
-    st.markdown("##### 📊 Your Session")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.metric("Messages", st.session_state.interaction_count)
-    with c2:
-        st.metric("Topics", len(st.session_state.categories_helped))
-
-    st.markdown("---")
-    st.markdown("##### 🏷️ Support Areas")
-    cat_icons = {"mental_health": "💚", "financial": "💰", "academic": "📚", "housing": "🏠", "general_wellbeing": "🌟"}
-    for key, label in CATEGORY_LABELS.items():
-        mark = " ✓" if key in st.session_state.categories_helped else ""
-        st.markdown(f"{cat_icons[key]}  {label}{mark}")
-
-    st.markdown("---")
-    with st.expander("🚨 Emergency Contacts"):
-        st.markdown("""
-**Samaritans** — 116 123 (24/7)\n
-**Crisis Text** — Text SHOUT to 85258\n
-**NHS Emergency** — 999\n
-**NHS Non-Emergency** — 111\n
-**Campus Security** — 0191 227 4500
-""")
-
-    st.markdown("---")
     if st.button("🚪 Log out", use_container_width=True, key="logout_btn"):
-        # Invalidate the server-side session and clear the cookie so a
-        # refresh after logout doesn't auto-restore the user.
         delete_session(_session_token)
         try:
             cookies.delete(SESSION_COOKIE_NAME)
@@ -894,7 +874,10 @@ with st.sidebar:
             st.session_state.pop(_k, None)
         st.rerun()
 
-    st.caption("⚠️ S.W.S.A. provides guidance only. Not a substitute for professional help. In emergencies call 999.")
+    st.caption(
+        "⚠️ S.W.S.A. provides guidance only — not a substitute for "
+        "professional help. In emergencies call 999."
+    )
 
 
 #  HELPERS
@@ -973,6 +956,12 @@ if st.session_state.mode == "admin":
         st.session_state.mode = "chat"
         st.stop()
     render_admin_panel()
+    st.stop()
+
+
+#  ACCOUNT SETTINGS MODE — full-page profile + password page
+if st.session_state.mode == "settings":
+    render_account_page()
     st.stop()
 
 
@@ -1079,32 +1068,77 @@ else:
         else:
             with st.chat_message("user", avatar="🧑‍🎓"):
                 st.markdown(msg["content"])
+                _user_meta = msg.get("metadata") or {}
+                _attachments = _user_meta.get("attachments") or []
+                if _attachments:
+                    st.caption(" ".join(f"📎 `{n}`" for n in _attachments))
 
     # ── Input handling ──────────────────────────────────────
     pending = st.session_state.pop("pending_input", None)
-    user_input = st.chat_input("Tell S.W.S.A. what's on your mind...")
-    active_input = user_input or pending
+    chat_value = st.chat_input(
+        "Tell S.W.S.A. what's on your mind…",
+        accept_file="multiple",
+        file_type=["pdf", "docx", "txt", "md"],
+    )
 
-    if active_input:
+    # chat_input with accept_file returns None or a ChatInputValue
+    # (with .text and .files). Pending strings (from feedback buttons /
+    # the landing page) don't carry files.
+    text_in = ""
+    files_in: list = []
+    if chat_value is not None:
+        text_in = (getattr(chat_value, "text", "") or "").strip()
+        files_in = list(getattr(chat_value, "files", []) or [])
+    if not text_in and not files_in and pending:
+        text_in = str(pending).strip()
+
+    if text_in or files_in:
+        # Pull readable text out of any attached files
+        extracted_docs, doc_errors = extract_attachments(files_in)
+        for err in doc_errors:
+            st.warning(f"📎 {err}")
+
+        # What the user sees in their bubble (+ filename chips)
+        display_text = text_in or "(see attached document)"
+        attachment_names = [name for name, _ in extracted_docs]
+
+        # What the AI actually receives (display_text + extracted doc text)
+        ai_input = build_augmented_message(text_in, extracted_docs)
+
+        user_metadata: dict | None = None
+        if attachment_names:
+            user_metadata = {"attachments": attachment_names}
+
         # Create a conversation row on the user's first message of this chat,
         # and use that message as the auto-title.
+        title_seed = text_in or (
+            f"Document: {attachment_names[0]}" if attachment_names else "New conversation"
+        )
         if st.session_state.conversation_id is None:
             st.session_state.conversation_id = create_conversation(
                 user_id=st.session_state.user.id,
-                first_user_message=active_input,
+                first_user_message=title_seed,
             )
         elif not st.session_state.messages:
-            # Defensive: conversation exists but has no messages yet (e.g. created
-            # then session resumed). Use this message as the title.
-            update_title(st.session_state.conversation_id, active_input)
+            update_title(st.session_state.conversation_id, title_seed)
 
         with st.chat_message("user", avatar="🧑‍🎓"):
-            st.markdown(active_input)
-        st.session_state.messages.append({"role": "user", "content": active_input, "metadata": None})
-        add_message(st.session_state.conversation_id, "user", active_input)
+            st.markdown(display_text)
+            if attachment_names:
+                chips = " ".join(f"📎 `{n}`" for n in attachment_names)
+                st.caption(chips)
+        st.session_state.messages.append(
+            {"role": "user", "content": display_text, "metadata": user_metadata}
+        )
+        add_message(
+            st.session_state.conversation_id,
+            "user",
+            display_text,
+            user_metadata,
+        )
 
         with st.chat_message("assistant", avatar="🛡️"):
-            stream = st.session_state.agent.process_message_stream(active_input)
+            stream = st.session_state.agent.process_message_stream(ai_input)
 
             # Typing indicator while the classifier OpenAI call runs
             classify_typing = st.empty()

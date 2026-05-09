@@ -58,3 +58,68 @@ def extract_text(uploaded_file) -> tuple[str, str | None]:
         f"Unsupported file type: '{uploaded_file.name}'. "
         "Please upload a PDF, DOCX, TXT, or MD file."
     )
+
+
+# ── Batch extraction for chat-attached files ──────────────────────────
+
+
+# Hard caps to keep us under the model's context window. Per-file cap
+# kicks in for unusually long single documents; the total cap protects
+# against a user attaching a stack of large PDFs at once.
+MAX_CHARS_PER_FILE = 12_000
+MAX_CHARS_TOTAL = 30_000
+
+
+def extract_attachments(files) -> tuple[list[tuple[str, str]], list[str]]:
+    """Extract text from a list of Streamlit uploaded files.
+
+    Returns (extracted, errors) where:
+      - extracted is a list of (filename, text) tuples
+      - errors is a list of human-readable error strings (one per problem file)
+    """
+    extracted: list[tuple[str, str]] = []
+    errors: list[str] = []
+    if not files:
+        return extracted, errors
+
+    total = 0
+    for f in files:
+        text, err = extract_text(f)
+        if err:
+            errors.append(f"{f.name}: {err}")
+            continue
+        if not text or not text.strip():
+            errors.append(
+                f"{f.name}: no readable text (scanned image PDF?)"
+            )
+            continue
+        if len(text) > MAX_CHARS_PER_FILE:
+            text = (
+                text[:MAX_CHARS_PER_FILE]
+                + "\n\n[…this file was truncated for length…]"
+            )
+        if total + len(text) > MAX_CHARS_TOTAL:
+            remaining = max(0, MAX_CHARS_TOTAL - total)
+            text = (
+                text[:remaining]
+                + "\n\n[…remaining attachments truncated to fit context…]"
+            )
+        extracted.append((f.name, text))
+        total += len(text)
+        if total >= MAX_CHARS_TOTAL:
+            break
+    return extracted, errors
+
+
+def build_augmented_message(user_text: str, docs: list[tuple[str, str]]) -> str:
+    """Combine the user's typed message with attached document text — the
+    string the AI actually sees on the wire."""
+    if not docs:
+        return user_text
+    body = user_text.strip() or "(Please look at the attached document.)"
+    pieces = [body, "", "=== ATTACHED DOCUMENT(S) ==="]
+    for name, content in docs:
+        pieces.append("")
+        pieces.append(f"--- {name} ---")
+        pieces.append(content)
+    return "\n".join(pieces)
