@@ -72,9 +72,19 @@ def render_admin_panel() -> None:
             st.session_state.mode = "chat"
             st.rerun()
 
+    _username = st.session_state.user.username
+    _env_single = (os.getenv("ADMIN_USERNAME", "") or "").strip()
+    _env_list = {
+        u.strip() for u in (os.getenv("ADMIN_USERNAMES", "") or "").split(",") if u.strip()
+    }
+    if _username == _env_single:
+        _source_text = "via the `ADMIN_USERNAME` environment variable"
+    elif _username in _env_list:
+        _source_text = "via the `ADMIN_USERNAMES` environment variable"
+    else:
+        _source_text = "via in-app promotion"
     st.caption(
-        f"Signed in as **{st.session_state.user.username}** · admin role granted via "
-        "`ADMIN_USERNAMES` environment variable"
+        f"Signed in as **{_username}** · admin role granted {_source_text}"
     )
 
     tabs = st.tabs(

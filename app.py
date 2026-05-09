@@ -1001,7 +1001,10 @@ st.markdown(
 )
 
 #  HERO LOGO — S.W.S.A.
-st.markdown("""
+# Only render the hero in chat mode. Admin / Study / Community / Settings
+# pages all have their own headings, so the hero just wastes vertical space.
+if st.session_state.mode == "chat":
+    st.markdown("""
 <div class="swsa-hero">
     <div class="swsa-logo-row">
         <span class="swsa-letter l1">S</span>
