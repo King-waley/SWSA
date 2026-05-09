@@ -59,12 +59,31 @@ st.markdown("""
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
 }
 
-/* ── Hide Streamlit chrome ─────────────────────────────────── */
-#MainMenu, header, footer,
+/* ── Hide Streamlit chrome (but KEEP the header — it holds the
+       sidebar collapse/expand chevron) ─────────────────────────── */
+#MainMenu, footer,
 .stDeployButton,
 div[data-testid="stToolbar"],
 div[data-testid="stDecoration"],
 div[data-testid="stStatusWidget"] { display: none !important; }
+
+/* Make the header itself transparent so it doesn't visually intrude,
+   but the sidebar toggle button inside it stays clickable. */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    height: auto !important;
+}
+
+/* Force the sidebar collapse/expand button to always be visible and
+   floating above content, so users can never get stuck without it. */
+button[data-testid="stSidebarCollapseButton"],
+button[data-testid="stBaseButton-headerNoPadding"],
+button[kind="header"] {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 999 !important;
+}
 
 /* ── Global ────────────────────────────────────────────────── */
 html, body, .stApp {
