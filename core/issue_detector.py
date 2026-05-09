@@ -36,6 +36,21 @@ def classify_issue_openai(user_input: str) -> dict:
         max_tokens=200,
     )
 
+    # Token accounting — best-effort, doesn't block the classify flow.
+    try:
+        from db.usage import log_usage
+
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            log_usage(
+                model=OPENAI_CLASSIFIER_MODEL,
+                prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+                completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                purpose="classify",
+            )
+    except Exception:  # noqa: BLE001
+        pass
+
     # Extract the function call arguments
     tool_call = response.choices[0].message.tool_calls[0]
     result = json.loads(tool_call.function.arguments)

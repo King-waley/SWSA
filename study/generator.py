@@ -25,6 +25,23 @@ def _client() -> OpenAI:
     return OpenAI(api_key=config.OPENAI_API_KEY)
 
 
+def _log_usage(response, purpose: str) -> None:
+    """Best-effort token accounting."""
+    try:
+        from db.usage import log_usage
+
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            log_usage(
+                model=OPENAI_RESPONSE_MODEL,
+                prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+                completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+                purpose=purpose,
+            )
+    except Exception:  # noqa: BLE001
+        pass
+
+
 # ── Summary ────────────────────────────────────────────────────────────
 
 
@@ -57,6 +74,7 @@ def generate_summary(document_text: str) -> str:
         temperature=0.3,
         max_tokens=600,
     )
+    _log_usage(response, purpose="study_summary")
     return (response.choices[0].message.content or "").strip()
 
 
@@ -128,6 +146,7 @@ def generate_key_concepts(document_text: str) -> list[dict]:
         temperature=0.3,
         max_tokens=900,
     )
+    _log_usage(response, purpose="study_keypoints")
     tool_call = response.choices[0].message.tool_calls[0]
     args = json.loads(tool_call.function.arguments)
     return args.get("concepts", []) or []
@@ -214,6 +233,7 @@ def generate_quiz(document_text: str, num_questions: int = 5) -> list[dict]:
         temperature=0.5,
         max_tokens=1500,
     )
+    _log_usage(response, purpose="study_quiz")
     tool_call = response.choices[0].message.tool_calls[0]
     args = json.loads(tool_call.function.arguments)
     return args.get("questions", []) or []

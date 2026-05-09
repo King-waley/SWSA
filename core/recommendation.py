@@ -7,7 +7,30 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "welfare_servi
 
 
 def load_knowledge_base() -> dict:
-    """Load the welfare services JSON knowledge base."""
+    """Load the welfare services JSON knowledge base.
+
+    If an admin has saved a DB override (Admin Panel → System →
+    Knowledge Base), that takes precedence over the file shipped in
+    `data/welfare_services.json`. The file is the source of truth for
+    a fresh deploy and the fallback if the override is cleared.
+    """
+    # Try DB override first — best-effort; never fail loading the KB
+    # because of a transient DB issue.
+    try:
+        from db.settings import get_kb_override
+
+        override = get_kb_override()
+        if isinstance(override, dict) and override:
+            return override
+    except Exception:  # noqa: BLE001
+        pass
+    with open(DATA_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_default_knowledge_base() -> dict:
+    """Always read the original on-disk JSON, ignoring any DB override.
+    Used by the admin editor's 'Reset to file default' button."""
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 

@@ -274,3 +274,200 @@ def admin_demote(user_id: int) -> bool:
         )
         session.commit()
         return bool(n)
+
+
+# ── Crisis review ────────────────────────────────────────────────────
+
+
+def crisis_messages(limit: int = 100) -> list[dict]:
+    """Return assistant messages where the original turn was flagged as
+    a crisis, newest first. Used by the admin Crisis tab."""
+    with SessionLocal() as session:
+        # We use a simple JSON-text scan because the JSON1 capabilities
+        # vary between Postgres and SQLite. The DB caps how many rows
+        # this can scan in practice; for production we'd add an index.
+        rows = (
+            session.query(Message, Conversation, User)
+            .join(Conversation, Conversation.id == Message.conversation_id)
+            .join(User, User.id == Conversation.user_id)
+            .filter(
+                Message.role == "assistant",
+                Message.extra.isnot(None),
+            )
+            .order_by(Message.created_at.desc())
+            .limit(500)
+            .all()
+        )
+        out: list[dict] = []
+        for m, c, u in rows:
+            extra = m.extra or {}
+            if not extra.get("is_crisis"):
+                continue
+            out.append(
+                {
+                    "message_id": m.id,
+                    "conversation_id": c.id,
+                    "conversation_title": c.title,
+                    "username": u.username,
+                    "user_id": u.id,
+                    "created_at": m.created_at,
+                    "snippet": (m.content or "")[:280],
+                    "categories": extra.get("categories", []),
+                    "sentiment": extra.get("sentiment"),
+                }
+            )
+            if len(out) >= limit:
+                break
+        return out
+
+
+def crisis_count() -> int:
+    """Cheap total of crisis-flagged turns for the dashboard tile."""
+    return len(crisis_messages(limit=10_000))
+
+
+# ── Analytics (charts) ──────────────────────────────────────────────
+
+
+def signups_per_day(days: int = 14) -> list[dict]:
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    with SessionLocal() as session:
+        rows = (
+            session.query(
+                func.date(User.created_at).label("day"),
+                func.count(User.id).label("count"),
+            )
+            .filter(User.created_at >= cutoff)
+            .group_by("day")
+            .order_by("day")
+            .all()
+        )
+        return [{"day": str(r.day), "count": int(r.count or 0)} for r in rows]
+
+
+def messages_per_day(days: int = 14) -> list[dict]:
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    with SessionLocal() as session:
+        rows = (
+            session.query(
+                func.date(Message.created_at).label("day"),
+                func.count(Message.id).label("count"),
+            )
+            .filter(Message.created_at >= cutoff)
+            .group_by("day")
+            .order_by("day")
+            .all()
+        )
+        return [{"day": str(r.day), "count": int(r.count or 0)} for r in rows]
+
+
+def category_distribution() -> dict:
+    """Category counts across all assistant messages (best-effort)."""
+    counts: dict[str, int] = {}
+    with SessionLocal() as session:
+        rows = (
+            session.query(Message.extra)
+            .filter(Message.role == "assistant", Message.extra.isnot(None))
+            .all()
+        )
+    for (extra,) in rows:
+        if not extra:
+            continue
+        for cat in (extra.get("categories") or []):
+            counts[cat] = counts.get(cat, 0) + 1
+    return counts
+
+
+# ── User detail drill-down ──────────────────────────────────────────
+
+
+def user_detail(user_id: int) -> dict | None:
+    """Everything we know about one user — for the admin's drill-down."""
+    with SessionLocal() as session:
+        u = session.query(User).filter(User.id == user_id).first()
+        if u is None:
+            return None
+        convs = (
+            session.query(
+                Conversation.id,
+                Conversation.title,
+                Conversation.updated_at,
+                Conversation.created_at,
+                func.count(Message.id).label("msg_count"),
+            )
+            .outerjoin(Message, Message.conversation_id == Conversation.id)
+            .filter(Conversation.user_id == user_id)
+            .group_by(Conversation.id)
+            .order_by(Conversation.updated_at.desc())
+            .all()
+        )
+        active_sessions = (
+            session.query(UserSession)
+            .filter(
+                UserSession.user_id == user_id,
+                UserSession.expires_at > datetime.utcnow(),
+            )
+            .count()
+        )
+        return {
+            "id": u.id,
+            "username": u.username,
+            "full_name": u.full_name,
+            "email": u.email,
+            "created_at": u.created_at,
+            "active_sessions": active_sessions,
+            "conversations": [
+                {
+                    "id": cid,
+                    "title": title,
+                    "msg_count": int(mcount or 0),
+                    "created_at": cat,
+                    "updated_at": uat,
+                }
+                for cid, title, uat, cat, mcount in convs
+            ],
+        }
+
+
+# ── Export ──────────────────────────────────────────────────────────
+
+
+def export_users_csv() -> str:
+    """Return CSV string of users with conversation/message counts."""
+    import csv
+    import io
+
+    rows = all_users_with_stats()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(
+        ["id", "username", "full_name", "email", "is_admin",
+         "created_at", "last_active", "conversation_count"]
+    )
+    for u in rows:
+        w.writerow([
+            u["id"], u["username"], u["full_name"] or "",
+            u["email"] or "", "yes" if u["is_admin"] else "no",
+            (u["created_at"].isoformat() if u["created_at"] else ""),
+            (u["last_active"].isoformat() if u["last_active"] else ""),
+            u["conv_count"],
+        ])
+    return buf.getvalue()
+
+
+def export_conversations_json() -> str:
+    """Full export of every conversation + every message as JSON."""
+    import json
+
+    out: list[dict] = []
+    for c in all_conversations(limit=10_000):
+        full = conversation_with_messages(c["id"])
+        if full is None:
+            continue
+        out.append(full)
+    return json.dumps(
+        out,
+        default=str,  # datetimes -> ISO strings
+        indent=2,
+        ensure_ascii=False,
+    )

@@ -603,15 +603,13 @@ div[data-testid="stChatInput"] textarea {
 def _bootstrap_db():
     try:
         init_db()
-        # Auto-create the admin account from ADMIN_USERNAME / ADMIN_PASSWORD
-        # if those env vars are configured. Safe (idempotent) on every boot.
         from auth.admin import bootstrap_admin_from_env
+        from db.emergency import seed_defaults_if_empty as seed_emergency
         from db.groups import seed_from_config_if_empty
 
         bootstrap_admin_from_env()
-        # On a fresh DB, populate support_groups from the SUPPORT_GROUPS list
-        # in config.py so admins have something to edit.
         seed_from_config_if_empty()
+        seed_emergency()
         return None
     except Exception as exc:  # noqa: BLE001
         logger.exception("Database initialisation failed")
@@ -673,6 +671,54 @@ if not _session_token:
         expires_at=datetime.utcnow() + timedelta(days=SESSION_DAYS),
     )
     _session_token = _new_token
+
+
+#  MAINTENANCE MODE — admins always pass, everyone else sees a splash.
+from db.settings import get_announcement, is_maintenance_mode  # noqa: E402
+
+if is_maintenance_mode() and not is_admin(st.session_state.user):
+    st.markdown(
+        """
+<div style="text-align:center;padding:6rem 2rem">
+    <h1 style="font-size:3rem">🛠️ Just a moment…</h1>
+    <p style="font-size:1.2rem;color:#475569;max-width:540px;margin:1rem auto">
+        S.W.S.A. is temporarily offline for maintenance. We'll be back
+        very soon — please try again in a few minutes.
+    </p>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+    st.stop()
+
+
+#  ANNOUNCEMENT BANNER — admin-controlled, shown to everyone.
+_announcement = get_announcement()
+if _announcement:
+    _sev = _announcement["severity"]
+    _palette = {
+        "info":    ("#DBEAFE", "#1E3A8A", "#60A5FA", "ℹ️"),
+        "warning": ("#FEF3C7", "#92400E", "#F59E0B", "⚠️"),
+        "urgent":  ("#FEE2E2", "#991B1B", "#EF4444", "🚨"),
+    }.get(_sev, ("#DBEAFE", "#1E3A8A", "#60A5FA", "ℹ️"))
+    _bg, _fg, _border, _emoji = _palette
+    st.markdown(
+        f"""
+<div style="
+    background: {_bg};
+    color: {_fg};
+    border-left: 4px solid {_border};
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0 0 0.75rem 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+">
+    <strong>{_emoji} Announcement:</strong> {_announcement['text']}
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 #  SESSION STATE
@@ -778,25 +824,29 @@ with st.sidebar:
         st.session_state.mode = "chat"
         st.rerun()
 
-    if st.button(
-        "📚 Study Tools",
-        use_container_width=True,
-        type="primary" if _mode == "study" else "secondary",
-        key="nav_study_btn",
-        disabled=_mode == "study",
-    ):
-        st.session_state.mode = "study"
-        st.rerun()
+    from db.settings import is_feature_enabled  # noqa: E402
 
-    if st.button(
-        "💬 Community",
-        use_container_width=True,
-        type="primary" if _mode == "community" else "secondary",
-        key="nav_community_btn",
-        disabled=_mode == "community",
-    ):
-        st.session_state.mode = "community"
-        st.rerun()
+    if is_feature_enabled("study_tools"):
+        if st.button(
+            "📚 Study Tools",
+            use_container_width=True,
+            type="primary" if _mode == "study" else "secondary",
+            key="nav_study_btn",
+            disabled=_mode == "study",
+        ):
+            st.session_state.mode = "study"
+            st.rerun()
+
+    if is_feature_enabled("community"):
+        if st.button(
+            "💬 Community",
+            use_container_width=True,
+            type="primary" if _mode == "community" else "secondary",
+            key="nav_community_btn",
+            disabled=_mode == "community",
+        ):
+            st.session_state.mode = "community"
+            st.rerun()
 
     if st.button(
         "⚙️ Account",
@@ -864,13 +914,17 @@ with st.sidebar:
     # ── Footer ──────────────────────────────────────────────
     st.markdown("---")
     with st.expander("🚨 Emergency contacts"):
-        st.markdown(
-            "**Samaritans** — 116 123 (24/7)  \n"
-            "**Crisis Text** — Text SHOUT to 85258  \n"
-            "**NHS Emergency** — 999  \n"
-            "**NHS Non-Emergency** — 111  \n"
-            "**Campus Security** — 0191 227 4500"
-        )
+        from db.emergency import list_contacts as _list_emergency
+
+        _contacts = _list_emergency(active_only=True)
+        if _contacts:
+            st.markdown(
+                "  \n".join(
+                    f"**{c['label']}** — {c['value']}" for c in _contacts
+                )
+            )
+        else:
+            st.caption("No emergency contacts configured.")
 
     if st.button("🚪 Log out", use_container_width=True, key="logout_btn"):
         delete_session(_session_token)
@@ -1101,11 +1155,16 @@ else:
 
     # ── Input handling ──────────────────────────────────────
     pending = st.session_state.pop("pending_input", None)
-    chat_value = st.chat_input(
-        "Tell S.W.S.A. what's on your mind…",
-        accept_file="multiple",
-        file_type=["pdf", "docx", "txt", "md"],
-    )
+    from db.settings import is_feature_enabled as _ff_enabled  # noqa: E402
+
+    if _ff_enabled("file_upload"):
+        chat_value = st.chat_input(
+            "Tell S.W.S.A. what's on your mind…",
+            accept_file="multiple",
+            file_type=["pdf", "docx", "txt", "md"],
+        )
+    else:
+        chat_value = st.chat_input("Tell S.W.S.A. what's on your mind…")
 
     # chat_input with accept_file returns None or a ChatInputValue
     # (with .text and .files). Pending strings (from feedback buttons /

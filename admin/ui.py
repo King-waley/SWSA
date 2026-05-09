@@ -17,17 +17,44 @@ from admin.queries import (
     admin_reset_password,
     all_conversations,
     all_users_with_stats,
+    category_distribution,
     conversation_with_messages,
+    crisis_count,
+    crisis_messages,
+    export_conversations_json,
+    export_users_csv,
+    messages_per_day,
     recent_signups,
+    signups_per_day,
     stats,
+    user_detail,
 )
 from auth.admin import admin_usernames
+from db import audit
+from db.emergency import (
+    create_contact,
+    delete_contact,
+    list_contacts,
+    update_contact,
+)
 from db.groups import (
     create_group,
     delete_group,
     list_groups,
     update_group,
 )
+from db.settings import (
+    FEATURES,
+    get_announcement_full,
+    get_kb_override,
+    is_feature_enabled,
+    is_maintenance_mode,
+    set_announcement,
+    set_feature_enabled,
+    set_kb_override,
+    set_maintenance_mode,
+)
+from db.usage import usage_per_day, usage_summary
 
 
 def _format_dt(dt) -> str:
@@ -55,7 +82,9 @@ def render_admin_panel() -> None:
             "📊 Dashboard",
             "👥 Users",
             "💬 Conversations",
-            "🌐 Community",
+            "🚨 Crisis",
+            "📝 Content",
+            "📈 Insight",
             "⚙️ System",
             "⚠️ Danger zone",
         ]
@@ -67,11 +96,22 @@ def render_admin_panel() -> None:
     with tabs[2]:
         _conversations()
     with tabs[3]:
-        _community_groups()
+        _crisis()
     with tabs[4]:
-        _system()
+        _content()
     with tabs[5]:
+        _insight()
+    with tabs[6]:
+        _system()
+    with tabs[7]:
         _danger_zone()
+
+
+def _current_admin() -> tuple[int | None, str | None]:
+    u = st.session_state.get("user")
+    if u is None:
+        return None, None
+    return u.id, u.username
 
 
 # ── Tabs ────────────────────────────────────────────────────────────
@@ -79,6 +119,9 @@ def render_admin_panel() -> None:
 
 def _dashboard() -> None:
     s = stats()
+    cost = usage_summary()
+    crisis_n = crisis_count()
+
     st.markdown("### Live counts")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric(
@@ -93,6 +136,13 @@ def _dashboard() -> None:
         delta=f"+{s['msgs_24h']} (24h)" if s["msgs_24h"] else None,
     )
     c4.metric("Active sessions", s["active_sessions"])
+
+    st.markdown("### Welfare & cost")
+    d1, d2, d3, d4 = st.columns(4)
+    d1.metric("🚨 Crisis turns", crisis_n, help="Assistant replies that fired the crisis-detection path.")
+    d2.metric("Tokens (today)", f"{cost['today']['total_tokens']:,}")
+    d3.metric("Tokens (7d)", f"{cost['week']['total_tokens']:,}")
+    d4.metric("Spend (7d)", f"${cost['week']['cost_usd']:.2f}")
 
     st.markdown("---")
     st.markdown("### Recent signups")
@@ -189,6 +239,11 @@ def _users() -> None:
                         use_container_width=True,
                     ):
                         admin_demote(u["id"])
+                        aid, aname = _current_admin()
+                        audit.log(admin_user_id=aid, admin_username=aname,
+                                  action="user.demote", target_type="user",
+                                  target_id=u["id"],
+                                  details={"username": u["username"]})
                         st.success(f"@{u['username']} is no longer an admin.")
                         st.rerun()
                 else:
@@ -198,6 +253,11 @@ def _users() -> None:
                         use_container_width=True,
                     ):
                         admin_promote(u["id"])
+                        aid, aname = _current_admin()
+                        audit.log(admin_user_id=aid, admin_username=aname,
+                                  action="user.promote", target_type="user",
+                                  target_id=u["id"],
+                                  details={"username": u["username"]})
                         st.success(f"@{u['username']} is now an admin.")
                         st.rerun()
 
@@ -237,6 +297,11 @@ def _users() -> None:
                         use_container_width=True,
                     ):
                         admin_delete_user(u["id"])
+                        aid, aname = _current_admin()
+                        audit.log(admin_user_id=aid, admin_username=aname,
+                                  action="user.delete", target_type="user",
+                                  target_id=u["id"],
+                                  details={"username": u["username"]})
                         st.rerun()
 
 
@@ -393,29 +458,21 @@ def _community_groups() -> None:
 
 
 def _system() -> None:
-    st.markdown("### Environment")
-
-    db_url = os.getenv("DATABASE_URL", "")
-    db_kind = "Postgres (Railway)" if "postgres" in db_url else (
-        "SQLite (local file)" if not db_url else "Other"
+    sub = st.tabs(
+        ["🔑 API key", "🚧 Feature flags", "🌍 Environment", "📥 Export"]
     )
+    with sub[0]:
+        _api_key_panel()
+    with sub[1]:
+        _feature_flags_panel()
+    with sub[2]:
+        _environment_panel()
+    with sub[3]:
+        _export_panel()
 
-    rows = [
-        ("Database", db_kind),
-        ("Classifier model", config.OPENAI_CLASSIFIER_MODEL),
-        ("Response model", config.OPENAI_RESPONSE_MODEL),
-        ("Railway env", os.getenv("RAILWAY_ENVIRONMENT") or "(local dev)"),
-        ("Railway service", os.getenv("RAILWAY_SERVICE_NAME") or "—"),
-        ("Admin usernames", ", ".join(sorted(admin_usernames())) or "(none configured)"),
-    ]
-    for label, value in rows:
-        a, b = st.columns([2, 5])
-        a.markdown(f"**{label}**")
-        b.markdown(value)
 
-    st.markdown("---")
+def _api_key_panel() -> None:
     st.markdown("### 🔑 OpenAI API Key")
-
     if config.OPENAI_API_KEY:
         key = config.OPENAI_API_KEY
         masked = f"{key[:7]}…{key[-4:]}" if len(key) > 12 else "(set)"
@@ -445,6 +502,9 @@ def _system() -> None:
             if new_key and new_key.strip():
                 config.OPENAI_API_KEY = new_key.strip()
                 os.environ["OPENAI_API_KEY"] = new_key.strip()
+                aid, aname = _current_admin()
+                audit.log(admin_user_id=aid, admin_username=aname,
+                          action="api_key.update")
                 st.success("Key saved. New chat replies will use this key.")
                 st.rerun()
             else:
@@ -457,6 +517,9 @@ def _system() -> None:
         ):
             config.OPENAI_API_KEY = ""
             os.environ.pop("OPENAI_API_KEY", None)
+            aid, aname = _current_admin()
+            audit.log(admin_user_id=aid, admin_username=aname,
+                      action="api_key.clear")
             st.info("Key cleared. Chats will use template fallback.")
             st.rerun()
 
@@ -465,12 +528,116 @@ def _system() -> None:
         "change survive deploys, edit `OPENAI_API_KEY` in Railway → Variables."
     )
 
+
+def _feature_flags_panel() -> None:
+    st.markdown("### 🚧 Feature flags")
+    st.caption(
+        "Turn parts of the app on or off without redeploying. Useful while "
+        "fixing a bug or staging a launch."
+    )
+
+    # Maintenance mode (special)
+    with st.container(border=True):
+        cols = st.columns([4, 2])
+        with cols[0]:
+            st.markdown("**🛠️ Maintenance mode**")
+            st.caption(
+                "When ON, regular users see a 'we'll be back' splash. "
+                "Admins can still log in and reach the panel."
+            )
+        with cols[1]:
+            current = is_maintenance_mode()
+            new_val = st.toggle("Enabled", value=current, key="maint_toggle")
+            if new_val != current:
+                set_maintenance_mode(new_val)
+                aid, aname = _current_admin()
+                audit.log(admin_user_id=aid, admin_username=aname,
+                          action="maintenance.toggle",
+                          details={"enabled": new_val})
+                st.rerun()
+
+    st.markdown("---")
+    for key, label, _default in FEATURES:
+        with st.container(border=True):
+            cols = st.columns([4, 2])
+            with cols[0]:
+                st.markdown(f"**{label}**")
+                st.caption(f"Flag key: `feature.{key}`")
+            with cols[1]:
+                current = is_feature_enabled(key)
+                new_val = st.toggle(
+                    "Enabled", value=current, key=f"flag_{key}"
+                )
+                if new_val != current:
+                    set_feature_enabled(key, new_val)
+                    aid, aname = _current_admin()
+                    audit.log(admin_user_id=aid, admin_username=aname,
+                              action="feature.toggle",
+                              details={"key": key, "enabled": new_val})
+                    st.rerun()
+
+
+def _environment_panel() -> None:
+    st.markdown("### 🌍 Environment")
+    db_url = os.getenv("DATABASE_URL", "")
+    db_kind = (
+        "Postgres (Railway)" if "postgres" in db_url else
+        ("SQLite (local file)" if not db_url else "Other")
+    )
+    rows = [
+        ("Database", db_kind),
+        ("Classifier model", config.OPENAI_CLASSIFIER_MODEL),
+        ("Response model", config.OPENAI_RESPONSE_MODEL),
+        ("Railway env", os.getenv("RAILWAY_ENVIRONMENT") or "(local dev)"),
+        ("Railway service", os.getenv("RAILWAY_SERVICE_NAME") or "—"),
+        ("Admin usernames", ", ".join(sorted(admin_usernames())) or "(none configured)"),
+    ]
+    for label, value in rows:
+        a, b = st.columns([2, 5])
+        a.markdown(f"**{label}**")
+        b.markdown(value)
+
     st.markdown("---")
     st.markdown("### Available models")
     st.markdown(
         "Change `OPENAI_CLASSIFIER_MODEL` / `OPENAI_RESPONSE_MODEL` in "
         "`config.py` and redeploy to swap models."
     )
+
+
+def _export_panel() -> None:
+    from datetime import datetime as _dt
+
+    st.markdown("### 📥 Export everything")
+    st.caption(
+        "Download user accounts and full conversation history. Useful for "
+        "backups, research, or GDPR-style data requests."
+    )
+    stamp = _dt.utcnow().strftime("%Y-%m-%d-%H%M")
+
+    cols = st.columns(2)
+    with cols[0]:
+        st.markdown("**👥 Users (CSV)**")
+        st.caption("One row per user with conversation/message counts.")
+        st.download_button(
+            "Download users.csv",
+            data=export_users_csv(),
+            file_name=f"swsa-users-{stamp}.csv",
+            mime="text/csv",
+            type="primary",
+            use_container_width=True,
+        )
+    with cols[1]:
+        st.markdown("**💬 Conversations (JSON)**")
+        st.caption("Every conversation with all messages and metadata.")
+        st.download_button(
+            "Download conversations.json",
+            data=export_conversations_json(),
+            file_name=f"swsa-conversations-{stamp}.json",
+            mime="application/json",
+            type="primary",
+            use_container_width=True,
+        )
 
 
 def _danger_zone() -> None:
@@ -522,3 +689,302 @@ def _danger_zone() -> None:
                 session.query(UserSession).delete()
                 session.commit()
             st.success(f"Invalidated {count} session(s). You're next.")
+
+
+# ── New top-level tabs ──────────────────────────────────────────────
+
+
+def _crisis() -> None:
+    st.markdown("### 🚨 Crisis-flagged conversations")
+    st.caption(
+        "Every assistant turn that fired the crisis-detection path "
+        "(self-harm / suicide / immediate danger), newest first."
+    )
+    rows = crisis_messages(limit=200)
+    if not rows:
+        st.success("No crisis-flagged turns yet.")
+        return
+    for r in rows:
+        with st.container(border=True):
+            head = st.columns([4, 2, 2, 1])
+            head[0].markdown(
+                f"**{r['conversation_title']}**  \n"
+                f"by **@{r['username']}**"
+            )
+            head[1].caption(f"🕐 {_format_dt(r['created_at'])}")
+            head[2].caption(
+                f"📂 {', '.join(r.get('categories') or []) or '—'}"
+            )
+            with head[3]:
+                if st.button("Open", key=f"open_crisis_{r['message_id']}", use_container_width=True):
+                    st.session_state.admin_view_conv_id = r["conversation_id"]
+                    st.rerun()
+            st.markdown(f"> {r['snippet']}…")
+
+
+def _content() -> None:
+    st.caption(
+        "Edit the things students see — community groups, emergency contacts, "
+        "the welfare-services knowledge base, and the site-wide announcement."
+    )
+    sub = st.tabs(
+        ["🌐 Community groups", "📞 Emergency contacts", "📚 Knowledge base", "📢 Announcement"]
+    )
+    with sub[0]:
+        _community_groups()
+    with sub[1]:
+        _emergency_contacts()
+    with sub[2]:
+        _kb_editor()
+    with sub[3]:
+        _announcement_editor()
+
+
+def _emergency_contacts() -> None:
+    st.markdown("### 📞 Emergency contacts")
+    st.caption(
+        "These appear in every user's sidebar under '🚨 Emergency contacts'. "
+        "Toggle inactive to hide a contact without deleting it."
+    )
+
+    with st.expander("➕ Add a contact"):
+        with st.form("add_contact_form", clear_on_submit=True):
+            ec_label = st.text_input("Label", key="ec_label", placeholder="e.g. Samaritans")
+            ec_value = st.text_input("Value", key="ec_value", placeholder="e.g. 116 123 (24/7)")
+            ec_active = st.checkbox("Active", value=True, key="ec_active")
+            if st.form_submit_button("Add", type="primary"):
+                _, err = create_contact(ec_label, ec_value, is_active=ec_active)
+                if err:
+                    st.error(err)
+                else:
+                    aid, aname = _current_admin()
+                    audit.log(admin_user_id=aid, admin_username=aname,
+                              action="emergency_contact.create",
+                              target_type="emergency_contact",
+                              details={"label": ec_label, "value": ec_value})
+                    st.success("Added.")
+                    st.rerun()
+
+    contacts = list_contacts(active_only=False)
+    if not contacts:
+        st.info("No contacts yet.")
+        return
+    for c in contacts:
+        with st.container(border=True):
+            cols = st.columns([3, 4, 2, 2])
+            cols[0].markdown(f"**{c['label']}**")
+            cols[1].markdown(c["value"])
+            cols[2].caption("✅ Active" if c["is_active"] else "🚫 Hidden")
+            with cols[3].popover("Edit", use_container_width=True):
+                with st.form(f"ec_edit_{c['id']}"):
+                    new_label = st.text_input("Label", value=c["label"], key=f"ec_l_{c['id']}")
+                    new_value = st.text_input("Value", value=c["value"], key=f"ec_v_{c['id']}")
+                    new_order = st.number_input(
+                        "Sort order", value=int(c["sort_order"]), step=10, key=f"ec_o_{c['id']}"
+                    )
+                    new_active = st.checkbox(
+                        "Active", value=bool(c["is_active"]), key=f"ec_a_{c['id']}"
+                    )
+                    sv, dl = st.columns(2)
+                    if sv.form_submit_button("💾 Save", type="primary", use_container_width=True):
+                        ok, err = update_contact(
+                            c["id"], label=new_label, value=new_value,
+                            sort_order=int(new_order), is_active=new_active,
+                        )
+                        if err:
+                            st.error(err)
+                        else:
+                            aid, aname = _current_admin()
+                            audit.log(admin_user_id=aid, admin_username=aname,
+                                      action="emergency_contact.update",
+                                      target_type="emergency_contact", target_id=c["id"])
+                            st.success("Saved.")
+                            st.rerun()
+                    if dl.form_submit_button("🗑 Delete", use_container_width=True):
+                        delete_contact(c["id"])
+                        aid, aname = _current_admin()
+                        audit.log(admin_user_id=aid, admin_username=aname,
+                                  action="emergency_contact.delete",
+                                  target_type="emergency_contact", target_id=c["id"])
+                        st.rerun()
+
+
+def _kb_editor() -> None:
+    import json as _json
+
+    from core.recommendation import load_default_knowledge_base, load_knowledge_base
+
+    st.markdown("### 📚 Welfare-services knowledge base")
+    st.caption(
+        "This JSON drives every recommendation the AI makes. Edit carefully — "
+        "broken JSON falls back to the bundled default file."
+    )
+
+    has_override = get_kb_override() is not None
+    st.caption(
+        "📄 **Currently active:** " +
+        ("**DB override** (this editor's last save)" if has_override else "**bundled default file**")
+    )
+
+    current = load_knowledge_base()
+    text = st.text_area(
+        "JSON",
+        value=_json.dumps(current, indent=2, ensure_ascii=False),
+        height=420,
+        key="kb_editor_text",
+    )
+
+    cols = st.columns(3)
+    if cols[0].button("💾 Save override", type="primary", use_container_width=True):
+        try:
+            parsed = _json.loads(text)
+            if not isinstance(parsed, dict):
+                raise ValueError("Top-level JSON must be an object.")
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"Invalid JSON: {exc}")
+        else:
+            set_kb_override(parsed)
+            aid, aname = _current_admin()
+            audit.log(admin_user_id=aid, admin_username=aname,
+                      action="kb.update", target_type="kb")
+            st.success("Saved. New recommendations use this version.")
+            st.rerun()
+
+    if cols[1].button("🔄 Reload from DB", use_container_width=True):
+        st.rerun()
+
+    if cols[2].button("↩️ Reset to file default", use_container_width=True):
+        set_kb_override(None)
+        aid, aname = _current_admin()
+        audit.log(admin_user_id=aid, admin_username=aname,
+                  action="kb.reset", target_type="kb")
+        st.success("Override cleared — back to the bundled file.")
+        st.rerun()
+
+
+def _announcement_editor() -> None:
+    st.markdown("### 📢 Site-wide announcement banner")
+    st.caption(
+        "Shown to every logged-in user at the top of the page. Disable when "
+        "no longer needed — it doesn't auto-expire."
+    )
+    current = get_announcement_full()
+    with st.form("ann_form"):
+        text = st.text_area("Message", value=current["text"], height=100)
+        sev = st.selectbox(
+            "Severity", ["info", "warning", "urgent"],
+            index=["info", "warning", "urgent"].index(current["severity"]),
+        )
+        active = st.checkbox("Active (show to users)", value=current["active"])
+        if st.form_submit_button("Save announcement", type="primary"):
+            set_announcement(text, severity=sev, active=active)
+            aid, aname = _current_admin()
+            audit.log(admin_user_id=aid, admin_username=aname,
+                      action="announcement.update", target_type="announcement",
+                      details={"severity": sev, "active": active})
+            st.success("Saved.")
+            st.rerun()
+
+
+def _insight() -> None:
+    st.caption(
+        "Numbers and history — daily activity charts, OpenAI cost tracking, "
+        "and a record of every admin action."
+    )
+    sub = st.tabs(["📈 Analytics", "💰 Costs", "📋 Audit log"])
+    with sub[0]:
+        _analytics()
+    with sub[1]:
+        _costs()
+    with sub[2]:
+        _audit_log()
+
+
+def _analytics() -> None:
+    import pandas as pd
+
+    st.markdown("### 📈 Activity")
+    days = st.slider("Days", min_value=7, max_value=60, value=14, key="analytics_days")
+
+    sd = signups_per_day(days=days)
+    md = messages_per_day(days=days)
+
+    cols = st.columns(2)
+    with cols[0]:
+        st.markdown("**Signups per day**")
+        if sd:
+            st.line_chart(pd.DataFrame(sd).set_index("day"))
+        else:
+            st.caption("No signups in this window.")
+    with cols[1]:
+        st.markdown("**Messages per day**")
+        if md:
+            st.line_chart(pd.DataFrame(md).set_index("day"))
+        else:
+            st.caption("No messages in this window.")
+
+    st.markdown("---")
+    st.markdown("**Category distribution (all-time)**")
+    cat = category_distribution()
+    if cat:
+        df = pd.DataFrame(
+            sorted(cat.items(), key=lambda kv: -kv[1]),
+            columns=["category", "count"],
+        ).set_index("category")
+        st.bar_chart(df)
+    else:
+        st.caption("No classified turns yet.")
+
+
+def _costs() -> None:
+    import pandas as pd
+
+    st.markdown("### 💰 OpenAI cost tracking")
+    summary = usage_summary()
+    cols = st.columns(4)
+    cols[0].metric("Today", f"${summary['today']['cost_usd']:.4f}",
+                   help=f"{summary['today']['total_tokens']:,} tokens · {summary['today']['calls']} calls")
+    cols[1].metric("Past 7 days", f"${summary['week']['cost_usd']:.3f}",
+                   help=f"{summary['week']['total_tokens']:,} tokens")
+    cols[2].metric("Past 30 days", f"${summary['month']['cost_usd']:.2f}",
+                   help=f"{summary['month']['total_tokens']:,} tokens")
+    cols[3].metric("All time", f"${summary['all_time']['cost_usd']:.2f}",
+                   help=f"{summary['all_time']['total_tokens']:,} tokens")
+
+    st.markdown("---")
+    st.markdown("**Tokens per day (last 14 days)**")
+    daily = usage_per_day(days=14)
+    if daily:
+        st.line_chart(pd.DataFrame(daily).set_index("day"))
+    else:
+        st.caption("No API usage recorded yet.")
+    st.caption(
+        "Costs are estimated from the gpt-4o-mini price table baked into the "
+        "code. Update `db/usage.py → PRICES` if rates change."
+    )
+
+
+def _audit_log() -> None:
+    st.markdown("### 📋 Audit log (last 200 actions)")
+    rows = audit.recent(limit=200)
+    if not rows:
+        st.caption("No admin actions logged yet.")
+        return
+    import pandas as pd
+
+    df = pd.DataFrame(
+        [
+            {
+                "When": _format_dt(r["created_at"]),
+                "Admin": r["admin_username"] or "?",
+                "Action": r["action"],
+                "Target": (
+                    f"{r['target_type']}#{r['target_id']}"
+                    if r["target_type"] and r["target_id"] else
+                    (r["target_type"] or "")
+                ),
+            }
+            for r in rows
+        ]
+    )
+    st.dataframe(df, use_container_width=True, hide_index=True)
