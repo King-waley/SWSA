@@ -90,83 +90,95 @@ header[data-testid="stHeader"] {
     height: auto !important;
 }
 
-/* ── Custom sidebar toggle — bypasses Streamlit's flaky native one.
-   Hide Streamlit's own toggle. Visibility is controlled by Python:
-   when the sidebar should be hidden, we conditionally inject a
-   second <style> that translateX(-100%)'s the sidebar off-screen. */
+/* ── Hide Streamlit's left sidebar + native toggle entirely.
+   We use a top nav bar (rendered in the main area) instead. */
+section[data-testid="stSidebar"],
 button[kind="header"],
 [data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebarCollapsedControl"],
 [data-testid="collapsedControl"],
 [data-testid="baseButton-headerNoPadding"] {
     display: none !important;
-}
-
-section[data-testid="stSidebar"] {
-    transition: transform 0.25s ease, margin-left 0.25s ease !important;
-}
-
-/* Default expanded width on desktop */
-@media (min-width: 768px) {
-    section[data-testid="stSidebar"] {
-        min-width: 21rem !important;
-        width: 21rem !important;
-    }
-}
-
-/* Universal sidebar toggle — a real Streamlit button rendered inside a
-   container with key="swsa-sb-toggle-wrap". Streamlit's container key
-   becomes a CSS class `.st-key-...` we use to position the whole
-   thing fixed at top-left over everything else. This bypasses HTML
-   sanitisation issues with custom <a> tags / inline event handlers. */
-.st-key-swsa-sb-toggle-wrap {
-    position: fixed !important;
-    top: 12px !important;
-    left: 12px !important;
-    z-index: 100000 !important;
-    width: auto !important;
+    visibility: hidden !important;
+    width: 0 !important;
     margin: 0 !important;
-    padding: 0 !important;
 }
-.st-key-swsa-sb-toggle-wrap > div,
-.st-key-swsa-sb-toggle-wrap [data-testid="stVerticalBlock"],
-.st-key-swsa-sb-toggle-wrap [data-testid="stButton"] {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: auto !important;
-    gap: 0 !important;
-}
-.st-key-swsa-sb-toggle-wrap button {
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
-    border-radius: 10px !important;
-    background: #ffffff !important;
-    color: #1B2A3D !important;
-    border: 1px solid rgba(15, 23, 42, 0.14) !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.22) !important;
-    font-size: 22px !important;
-    font-weight: 700 !important;
-    padding: 0 !important;
-    line-height: 1 !important;
-    cursor: pointer !important;
-    -webkit-tap-highlight-color: transparent !important;
-    transition: background 0.15s ease, transform 0.15s ease !important;
-}
-.st-key-swsa-sb-toggle-wrap button:hover {
-    background: #F8FAFC !important;
-    transform: translateY(-1px) !important;
+
+/* ── Top nav bar ────────────────────────────────────────────── */
+.st-key-swsa-navbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 999 !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: saturate(180%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(12px) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+    padding: 0.65rem 0.85rem !important;
+    margin: -1rem -1rem 1rem -1rem !important;
+    box-shadow: 0 2px 14px rgba(15, 23, 42, 0.04) !important;
 }
 @media (prefers-color-scheme: dark) {
-    .st-key-swsa-sb-toggle-wrap button {
-        background: #1E293B !important;
-        color: #E2E8F0 !important;
-        border-color: rgba(255, 255, 255, 0.12) !important;
+    .st-key-swsa-navbar {
+        background: rgba(15, 23, 42, 0.92) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
     }
-    .st-key-swsa-sb-toggle-wrap button:hover {
-        background: #334155 !important;
+}
+
+/* Brand block on the left — coloured letter blocks */
+.navbar-brand {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    padding-left: 0.25rem;
+}
+.navbar-brand-letter {
+    width: 30px; height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+.navbar-brand-letter.l1 { background: linear-gradient(145deg, #2D6A4F, #52B788); }
+.navbar-brand-letter.l2 { background: linear-gradient(145deg, #1565C0, #42A5F5); }
+.navbar-brand-letter.l3 { background: linear-gradient(145deg, #7B1FA2, #BA68C8); }
+.navbar-brand-letter.l4 { background: linear-gradient(145deg, #E65100, #FF9800); }
+
+/* Tighten spacing of Streamlit's column rows inside the navbar */
+.st-key-swsa-navbar [data-testid="stHorizontalBlock"] {
+    gap: 0.5rem !important;
+    align-items: center !important;
+}
+.st-key-swsa-navbar .stButton button,
+.st-key-swsa-navbar .stPopover button {
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 0.6rem !important;
+    font-size: 0.85rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+}
+
+/* ── Sub-nav for chat mode (conversations dropdown + new chat) ── */
+.st-key-swsa-chat-subnav {
+    margin: 0 0 1rem 0 !important;
+    padding: 0.5rem 0 !important;
+}
+.st-key-swsa-chat-subnav [data-testid="stSelectbox"] label { display: none; }
+
+/* ── Mobile: condense the navbar so it fits in one row ─────── */
+@media (max-width: 767px) {
+    .navbar-brand-letter { width: 24px; height: 24px; font-size: 0.78rem; }
+    .st-key-swsa-navbar .stButton button,
+    .st-key-swsa-navbar .stPopover button {
+        font-size: 0.72rem !important;
+        padding: 0 0.35rem !important;
+        height: 34px !important;
     }
+    .st-key-swsa-navbar [data-testid="stHorizontalBlock"] { gap: 0.25rem !important; }
 }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
@@ -727,39 +739,7 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
 )
 
 
-#  SIDEBAR COLLAPSE — st.session_state-driven. The toggle is a normal
-#  st.button inside a container with key="swsa-sb-toggle-wrap"; CSS
-#  matched to `.st-key-swsa-sb-toggle-wrap` positions it fixed at
-#  top-left. When collapsed, we conditionally inject CSS that
-#  translateX(-100%)'s the sidebar off-screen.
-if "sb_collapsed" not in st.session_state:
-    st.session_state.sb_collapsed = False
-
-if st.session_state.sb_collapsed:
-    st.markdown(
-        """
-        <style>
-        section[data-testid="stSidebar"] {
-            transform: translateX(-100%) !important;
-        }
-        @media (min-width: 768px) {
-            section[data-testid="stSidebar"] {
-                margin-left: -22rem !important;
-            }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with st.container(key="swsa-sb-toggle-wrap"):
-    _toggle_label = "☰" if st.session_state.sb_collapsed else "×"
-    _toggle_help = (
-        "Open sidebar" if st.session_state.sb_collapsed else "Close sidebar"
-    )
-    if st.button(_toggle_label, key="swsa_sb_toggle_btn", help=_toggle_help):
-        st.session_state.sb_collapsed = not st.session_state.sb_collapsed
-        st.rerun()
+# (Sidebar toggle removed — replaced by the top nav bar below.)
 
 
 #  DATABASE — bootstrap schema once per process
@@ -999,173 +979,170 @@ def _load_conversation(conversation_id: int) -> None:
 
 
 #  SIDEBAR — clean nav-style layout
-with st.sidebar:
-    # ── Brand ───────────────────────────────────────────────
-    st.markdown(
-        """
-    <div class="sb-logo">
-        <div class="sb-logo-row">
-            <span class="sb-letter l1">S</span>
-            <span class="sb-letter l2">W</span>
-            <span class="sb-letter l3">S</span>
-            <span class="sb-letter l4">A</span>
-        </div>
-        <div class="sb-tag">Student Welfare Support Agent</div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+#  TOP NAV BAR (replaces the old left sidebar)
+_user = st.session_state.user
+_display_name = _user.full_name or _user.username
+_mode = st.session_state.mode
 
-    _user = st.session_state.user
-    _display_name = _user.full_name or _user.username
+from db.settings import is_feature_enabled  # noqa: E402
+from db.emergency import list_contacts as _list_emergency  # noqa: E402
 
-    # ── Greeting (no divider above) ─────────────────────────
-    st.markdown(
-        f"<div class='sb-greeting'>👋 Hi, <strong>{_display_name}</strong></div>",
-        unsafe_allow_html=True,
-    )
+with st.container(key="swsa-navbar"):
+    nav_brand, nav_links, nav_actions = st.columns([2, 7, 3])
 
-    # ── Primary navigation ──────────────────────────────────
-    _mode = st.session_state.mode
+    with nav_brand:
+        st.markdown(
+            """
+            <div class="navbar-brand">
+                <span class="navbar-brand-letter l1">S</span>
+                <span class="navbar-brand-letter l2">W</span>
+                <span class="navbar-brand-letter l3">S</span>
+                <span class="navbar-brand-letter l4">A</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    if st.button(
-        "💬 Chat",
-        use_container_width=True,
-        type="primary" if _mode == "chat" else "secondary",
-        key="nav_chat_btn",
-        disabled=_mode == "chat",
-    ):
-        st.session_state.mode = "chat"
-        st.rerun()
+    with nav_links:
+        # Build the visible-link list dynamically based on feature flags +
+        # admin status, then render with equal-width columns.
+        _items: list[tuple[str, str, str]] = [("chat", "💬", "Chat")]
+        if is_feature_enabled("study_tools"):
+            _items.append(("study", "📚", "Study"))
+        if is_feature_enabled("community"):
+            _items.append(("community", "🌐", "Community"))
+        _items.append(("settings", "⚙️", "Account"))
+        if is_admin(_user):
+            _items.append(("admin", "🛠️", "Admin"))
 
-    from db.settings import is_feature_enabled  # noqa: E402
-
-    if is_feature_enabled("study_tools"):
-        if st.button(
-            "📚 Study Tools",
-            use_container_width=True,
-            type="primary" if _mode == "study" else "secondary",
-            key="nav_study_btn",
-            disabled=_mode == "study",
-        ):
-            st.session_state.mode = "study"
-            st.rerun()
-
-    if is_feature_enabled("community"):
-        if st.button(
-            "💬 Community",
-            use_container_width=True,
-            type="primary" if _mode == "community" else "secondary",
-            key="nav_community_btn",
-            disabled=_mode == "community",
-        ):
-            st.session_state.mode = "community"
-            st.rerun()
-
-    if st.button(
-        "⚙️ Account",
-        use_container_width=True,
-        type="primary" if _mode == "settings" else "secondary",
-        key="nav_settings_btn",
-        disabled=_mode == "settings",
-    ):
-        st.session_state.mode = "settings"
-        st.rerun()
-
-    if is_admin(_user):
-        if st.button(
-            "🛠️ Admin",
-            use_container_width=True,
-            type="primary" if _mode == "admin" else "secondary",
-            key="nav_admin_btn",
-            disabled=_mode == "admin",
-        ):
-            st.session_state.mode = "admin"
-            st.rerun()
-
-    # ── Conversations ───────────────────────────────────────
-    st.markdown("---")
-    st.markdown("##### Conversations")
-    if st.button(
-        "➕ New chat",
-        use_container_width=True,
-        key="new_chat_btn",
-    ):
-        _start_new_chat()
-        st.rerun()
-
-    _conversations = list_conversations(_user.id)
-    if not _conversations:
-        st.caption("No past conversations yet.")
-    else:
-        for _conv in _conversations:
-            _is_active = (
-                _conv["id"] == st.session_state.conversation_id
-                and _mode == "chat"
-            )
-            _bullet = "▸ " if _is_active else ""
-            _col_open, _col_del = st.columns([5, 1])
-            with _col_open:
+        _link_cols = st.columns(len(_items))
+        for _i, (_target_mode, _icon, _label) in enumerate(_items):
+            with _link_cols[_i]:
                 if st.button(
-                    f"{_bullet}{_conv['title']}",
-                    key=f"open_conv_{_conv['id']}",
+                    f"{_icon} {_label}",
                     use_container_width=True,
-                    disabled=_is_active,
+                    type="primary" if _mode == _target_mode else "secondary",
+                    key=f"nav_link_{_target_mode}",
+                    disabled=_mode == _target_mode,
                 ):
-                    _load_conversation(_conv["id"])
+                    st.session_state.mode = _target_mode
                     st.rerun()
-            with _col_del:
+
+    with nav_actions:
+        _act_cols = st.columns(2)
+        with _act_cols[0]:
+            with st.popover(
+                f"👤 {_display_name[:14]}",
+                use_container_width=True,
+            ):
+                st.markdown(
+                    f"**{_display_name}**  \n`@{_user.username}`",
+                    unsafe_allow_html=True,
+                )
+                st.markdown("---")
+                with st.expander("🚨 Emergency contacts"):
+                    _contacts = _list_emergency(active_only=True)
+                    if _contacts:
+                        st.markdown(
+                            "  \n".join(
+                                f"**{c['label']}** — {c['value']}"
+                                for c in _contacts
+                            )
+                        )
+                    else:
+                        st.caption("No emergency contacts configured.")
+                st.caption(
+                    "⚠️ S.W.S.A. provides guidance only — not a substitute "
+                    "for professional help. In emergencies call 999."
+                )
+        with _act_cols[1]:
+            if st.button(
+                "🚪 Log out",
+                key="logout_btn",
+                use_container_width=True,
+                type="secondary",
+            ):
+                delete_session(_session_token)
+                try:
+                    cookies.delete(SESSION_COOKIE_NAME)
+                except Exception:
+                    pass
+                for _k in (
+                    "user",
+                    "agent",
+                    "messages",
+                    "started",
+                    "mood",
+                    "interaction_count",
+                    "categories_helped",
+                    "feedback_given",
+                    "conversation_id",
+                    "mode",
+                    "study",
+                ):
+                    st.session_state.pop(_k, None)
+                st.rerun()
+
+#  CHAT-MODE SUB-NAV: + New chat button + Conversations dropdown
+if _mode == "chat":
+    with st.container(key="swsa-chat-subnav"):
+        _conv_col, _new_col = st.columns([5, 2])
+        with _conv_col:
+            _conversations = list_conversations(_user.id)
+            if _conversations:
+                _options = [("__none__", "— Pick a past conversation —")] + [
+                    (str(c["id"]), c["title"]) for c in _conversations
+                ]
+                _option_keys = [k for k, _ in _options]
+                _option_labels = {k: v for k, v in _options}
+                _current_id = (
+                    str(st.session_state.conversation_id)
+                    if st.session_state.conversation_id
+                    else "__none__"
+                )
+                _current_idx = (
+                    _option_keys.index(_current_id)
+                    if _current_id in _option_keys
+                    else 0
+                )
+                _picked = st.selectbox(
+                    "Conversations",
+                    _option_keys,
+                    index=_current_idx,
+                    format_func=lambda k: _option_labels[k],
+                    label_visibility="collapsed",
+                    key="conv_picker",
+                )
+                if _picked != "__none__" and _picked != _current_id:
+                    _load_conversation(int(_picked))
+                    st.rerun()
+            else:
+                st.caption("No past conversations yet.")
+        with _new_col:
+            if st.button(
+                "➕ New chat",
+                use_container_width=True,
+                key="new_chat_btn",
+                type="primary",
+            ):
+                _start_new_chat()
+                st.rerun()
+
+        # Delete-current-conversation control (small, only when a
+        # conversation is loaded)
+        if st.session_state.conversation_id is not None:
+            _del_col_l, _del_col_r = st.columns([6, 1])
+            with _del_col_r:
                 if st.button(
                     "🗑",
-                    key=f"del_conv_{_conv['id']}",
+                    key="del_current_conv_btn",
                     help="Delete this conversation",
                 ):
-                    delete_conversation(_conv["id"], _user.id)
-                    if st.session_state.conversation_id == _conv["id"]:
-                        _start_new_chat()
+                    delete_conversation(
+                        st.session_state.conversation_id, _user.id
+                    )
+                    _start_new_chat()
                     st.rerun()
-
-    # ── Footer ──────────────────────────────────────────────
-    st.markdown("---")
-    with st.expander("🚨 Emergency contacts"):
-        from db.emergency import list_contacts as _list_emergency
-
-        _contacts = _list_emergency(active_only=True)
-        if _contacts:
-            st.markdown(
-                "  \n".join(
-                    f"**{c['label']}** — {c['value']}" for c in _contacts
-                )
-            )
-        else:
-            st.caption("No emergency contacts configured.")
-
-    if st.button("🚪 Log out", use_container_width=True, key="logout_btn"):
-        delete_session(_session_token)
-        try:
-            cookies.delete(SESSION_COOKIE_NAME)
-        except Exception:
-            pass
-        for _k in (
-            "user",
-            "agent",
-            "messages",
-            "started",
-            "mood",
-            "interaction_count",
-            "categories_helped",
-            "feedback_given",
-            "conversation_id",
-            "mode",
-            "study",
-        ):
-            st.session_state.pop(_k, None)
-        st.rerun()
-
-    st.caption(
-        "⚠️ S.W.S.A. provides guidance only — not a substitute for "
-        "professional help. In emergencies call 999."
-    )
 
 
 #  HELPERS
