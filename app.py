@@ -90,25 +90,46 @@ header[data-testid="stHeader"] {
     height: auto !important;
 }
 
-/* On desktop / tablet, force the sidebar permanently visible. This
-   avoids any chance of the user being locked out of it because a
-   collapse button is missing or its selector changed between
-   Streamlit versions. Mobile (<768px) keeps the default collapse-able
-   behaviour to save screen real estate. */
+/* Desktop: sidebar default-expanded at 21rem, but the collapse chevron
+   stays visible so users can hide it AND bring it back. Streamlit's
+   own JS handles open/close — we just keep the toggle button styled
+   and visible against the transparent header. */
 @media (min-width: 768px) {
-    section[data-testid="stSidebar"],
-    section[data-testid="stSidebar"][aria-expanded="false"] {
-        transform: none !important;
-        visibility: visible !important;
+    section[data-testid="stSidebar"]:not([aria-expanded="false"]) {
         min-width: 21rem !important;
         width: 21rem !important;
-        margin-left: 0 !important;
     }
-    /* Hide the collapse chevron on desktop since collapse is disabled. */
+    /* Always-visible, styled toggle button */
+    button[kind="header"],
     [data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {
-        display: none !important;
+    [data-testid="collapsedControl"],
+    [data-testid="baseButton-headerNoPadding"] {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: rgba(255, 255, 255, 0.92) !important;
+        color: #1B2A3D !important;
+        border: 1px solid rgba(15, 23, 42, 0.10) !important;
+        border-radius: 8px !important;
+        padding: 6px 10px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.10) !important;
+        z-index: 9001 !important;
+    }
+}
+@media (min-width: 768px) and (prefers-color-scheme: dark) {
+    button[kind="header"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [data-testid="baseButton-headerNoPadding"] {
+        background: #1E293B !important;
+        color: #E2E8F0 !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
     }
 }
 
@@ -751,8 +772,52 @@ if is_running_on_railway() and not is_persistent_db():
 cookies = stx.CookieManager(key="swsa_cookie_mgr")
 _session_token = cookies.get(SESSION_COOKIE_NAME)
 
-# If session_state has no user but the browser has a session cookie,
-# restore the user from the DB. This is what makes refresh keep you logged in.
+# extra-streamlit-components loads cookies asynchronously: on the very
+# first render after a page refresh (F5), .get(...) returns None even
+# if the cookie exists, then a few hundred ms later the component
+# triggers a rerun with the real value. Without bridging this gap the
+# user briefly sees the auth/showcase screen on every refresh — looks
+# like a forced logout. Show a branded splash instead and wait for the
+# next rerun, where cookies will be loaded.
+if (
+    "user" not in st.session_state or st.session_state.user is None
+) and not _session_token and not st.session_state.get(
+    "_cookie_load_attempted", False
+):
+    st.session_state._cookie_load_attempted = True
+    st.markdown(
+        """
+        <div style="
+            display:flex;align-items:center;justify-content:center;
+            min-height:70vh;flex-direction:column;color:#64748B;
+            font-family:'Plus Jakarta Sans',sans-serif;">
+            <div style="display:inline-flex;gap:8px;margin-bottom:1rem;">
+                <span style="width:48px;height:48px;border-radius:14px;
+                    background:linear-gradient(145deg,#2D6A4F,#52B788);
+                    display:inline-flex;align-items:center;justify-content:center;
+                    color:white;font-weight:800;font-size:1.4rem;">S</span>
+                <span style="width:48px;height:48px;border-radius:14px;
+                    background:linear-gradient(145deg,#1565C0,#42A5F5);
+                    display:inline-flex;align-items:center;justify-content:center;
+                    color:white;font-weight:800;font-size:1.4rem;">W</span>
+                <span style="width:48px;height:48px;border-radius:14px;
+                    background:linear-gradient(145deg,#7B1FA2,#BA68C8);
+                    display:inline-flex;align-items:center;justify-content:center;
+                    color:white;font-weight:800;font-size:1.4rem;">S</span>
+                <span style="width:48px;height:48px;border-radius:14px;
+                    background:linear-gradient(145deg,#E65100,#FF9800);
+                    display:inline-flex;align-items:center;justify-content:center;
+                    color:white;font-weight:800;font-size:1.4rem;">A</span>
+            </div>
+            <div style="font-size:0.9rem;letter-spacing:0.5px;">Loading your space…</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.stop()
+
+# Now session_state.user might be None (no cookie OR cookie invalid).
+# If a cookie exists, restore the user from the DB.
 if (
     "user" not in st.session_state or st.session_state.user is None
 ) and _session_token:
