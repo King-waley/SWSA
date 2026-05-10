@@ -114,45 +114,59 @@ section[data-testid="stSidebar"] {
     }
 }
 
-/* Universal sidebar toggle — ALWAYS visible at top-left, on every page,
-   regardless of sidebar state. Icon + href flip between '☰ open' and
-   '× close' based on st.session_state.sb_collapsed. z-index high
-   enough to sit above the sidebar itself when expanded. */
-a#swsa-sb-toggle {
+/* Universal sidebar toggle — a real Streamlit button rendered inside a
+   container with key="swsa-sb-toggle-wrap". Streamlit's container key
+   becomes a CSS class `.st-key-...` we use to position the whole
+   thing fixed at top-left over everything else. This bypasses HTML
+   sanitisation issues with custom <a> tags / inline event handlers. */
+.st-key-swsa-sb-toggle-wrap {
     position: fixed !important;
     top: 12px !important;
     left: 12px !important;
     z-index: 100000 !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.st-key-swsa-sb-toggle-wrap > div,
+.st-key-swsa-sb-toggle-wrap [data-testid="stVerticalBlock"],
+.st-key-swsa-sb-toggle-wrap [data-testid="stButton"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    gap: 0 !important;
+}
+.st-key-swsa-sb-toggle-wrap button {
     width: 44px !important;
     height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     border-radius: 10px !important;
     background: #ffffff !important;
     color: #1B2A3D !important;
     border: 1px solid rgba(15, 23, 42, 0.14) !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.20) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.22) !important;
     font-size: 22px !important;
     font-weight: 700 !important;
-    text-decoration: none !important;
+    padding: 0 !important;
     line-height: 1 !important;
-    font-family: system-ui, -apple-system, sans-serif !important;
     cursor: pointer !important;
     -webkit-tap-highlight-color: transparent !important;
+    transition: background 0.15s ease, transform 0.15s ease !important;
 }
-a#swsa-sb-toggle:hover {
+.st-key-swsa-sb-toggle-wrap button:hover {
     background: #F8FAFC !important;
-    transform: translateY(-1px);
-    transition: transform 0.15s ease, background 0.15s ease;
+    transform: translateY(-1px) !important;
 }
 @media (prefers-color-scheme: dark) {
-    a#swsa-sb-toggle {
+    .st-key-swsa-sb-toggle-wrap button {
         background: #1E293B !important;
         color: #E2E8F0 !important;
         border-color: rgba(255, 255, 255, 0.12) !important;
     }
-    a#swsa-sb-toggle:hover { background: #334155 !important; }
+    .st-key-swsa-sb-toggle-wrap button:hover {
+        background: #334155 !important;
+    }
 }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
@@ -713,31 +727,14 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
 )
 
 
-#  SIDEBAR COLLAPSE — driven by st.session_state + a query-param URL
-#  link, no JS injection needed. The "Open sidebar" link is a real
-#  <a href="?sb=show"> so it works without any client-side script;
-#  the "Close sidebar" button at the top of the sidebar is a normal
-#  st.button. CSS injected conditionally hides the sidebar.
+#  SIDEBAR COLLAPSE — st.session_state-driven. The toggle is a normal
+#  st.button inside a container with key="swsa-sb-toggle-wrap"; CSS
+#  matched to `.st-key-swsa-sb-toggle-wrap` positions it fixed at
+#  top-left. When collapsed, we conditionally inject CSS that
+#  translateX(-100%)'s the sidebar off-screen.
 if "sb_collapsed" not in st.session_state:
     st.session_state.sb_collapsed = False
 
-_qp_sb = st.query_params.get("sb")
-if _qp_sb == "show":
-    st.session_state.sb_collapsed = False
-    try:
-        del st.query_params["sb"]
-    except Exception:  # noqa: BLE001
-        pass
-    st.rerun()
-elif _qp_sb == "hide":
-    st.session_state.sb_collapsed = True
-    try:
-        del st.query_params["sb"]
-    except Exception:  # noqa: BLE001
-        pass
-    st.rerun()
-
-# Conditionally hide the sidebar via CSS injection
 if st.session_state.sb_collapsed:
     st.markdown(
         """
@@ -755,18 +752,14 @@ if st.session_state.sb_collapsed:
         unsafe_allow_html=True,
     )
 
-# ALWAYS render the toggle — icon + href flip based on state. This way
-# users always see a way to open/close the sidebar, regardless of
-# whether sb_collapsed defaulted to False or was set previously.
-_sb_href = "?sb=show" if st.session_state.sb_collapsed else "?sb=hide"
-_sb_icon = "&#9776;" if st.session_state.sb_collapsed else "&times;"
-_sb_label = "Open sidebar" if st.session_state.sb_collapsed else "Close sidebar"
-st.markdown(
-    f'<a id="swsa-sb-toggle" href="{_sb_href}" '
-    f'title="{_sb_label}" aria-label="{_sb_label}" target="_self">'
-    f'{_sb_icon}</a>',
-    unsafe_allow_html=True,
-)
+with st.container(key="swsa-sb-toggle-wrap"):
+    _toggle_label = "☰" if st.session_state.sb_collapsed else "×"
+    _toggle_help = (
+        "Open sidebar" if st.session_state.sb_collapsed else "Close sidebar"
+    )
+    if st.button(_toggle_label, key="swsa_sb_toggle_btn", help=_toggle_help):
+        st.session_state.sb_collapsed = not st.session_state.sb_collapsed
+        st.rerun()
 
 
 #  DATABASE — bootstrap schema once per process
