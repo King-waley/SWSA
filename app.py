@@ -90,46 +90,43 @@ header[data-testid="stHeader"] {
     height: auto !important;
 }
 
-/* Desktop: sidebar default-expanded at 21rem, but the collapse chevron
-   stays visible so users can hide it AND bring it back. Streamlit's
-   own JS handles open/close — we just keep the toggle button styled
-   and visible against the transparent header. */
+/* ── Custom sidebar toggle — bypasses Streamlit's flaky native one ──
+   We hide Streamlit's own toggle entirely and use our own JS-driven
+   button (#swsa-sb-toggle, injected via the components.html script).
+   Sidebar visibility is controlled by a class on <html>: when
+   `html.swsa-sb-collapsed` is present, the sidebar slides off-screen
+   and the layout reclaims the space.                                */
+button[kind="header"],
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+[data-testid="baseButton-headerNoPadding"] {
+    display: none !important;
+}
+
+section[data-testid="stSidebar"] {
+    transition: transform 0.25s ease, margin-left 0.25s ease !important;
+}
+
+/* Collapsed state: slide sidebar off the left edge */
+html.swsa-sb-collapsed section[data-testid="stSidebar"] {
+    transform: translateX(-100%) !important;
+    visibility: visible !important;
+}
+/* On desktop, also negative-margin the sidebar so the main content
+   reclaims its 21rem of space. On mobile the sidebar is already a
+   fixed overlay, no margin to reclaim. */
 @media (min-width: 768px) {
-    section[data-testid="stSidebar"]:not([aria-expanded="false"]) {
-        min-width: 21rem !important;
-        width: 21rem !important;
-    }
-    /* Always-visible, styled toggle button */
-    button[kind="header"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"],
-    [data-testid="baseButton-headerNoPadding"] {
-        display: inline-flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background: rgba(255, 255, 255, 0.92) !important;
-        color: #1B2A3D !important;
-        border: 1px solid rgba(15, 23, 42, 0.10) !important;
-        border-radius: 8px !important;
-        padding: 6px 10px !important;
-        min-width: 36px !important;
-        min-height: 36px !important;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.10) !important;
-        z-index: 9001 !important;
+    html.swsa-sb-collapsed section[data-testid="stSidebar"] {
+        margin-left: -22rem !important;
     }
 }
-@media (min-width: 768px) and (prefers-color-scheme: dark) {
-    button[kind="header"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"],
-    [data-testid="baseButton-headerNoPadding"] {
-        background: #1E293B !important;
-        color: #E2E8F0 !important;
-        border-color: rgba(255, 255, 255, 0.10) !important;
+
+/* Default expanded width on desktop */
+@media (min-width: 768px) {
+    section[data-testid="stSidebar"] {
+        min-width: 21rem !important;
+        width: 21rem !important;
     }
 }
 
@@ -139,36 +136,9 @@ header[data-testid="stHeader"] {
    button visible (the rest of our CSS makes the header transparent
    which hides it) and shrink the hero a bit for small screens. */
 @media (max-width: 767px) {
-    /* Give the header a subtle, blurred white bar on mobile so the
-       sidebar toggle inside it has visual contrast and is tappable.
-       Desktop keeps the transparent header.                          */
-    header[data-testid="stHeader"] {
-        background: rgba(255, 255, 255, 0.88) !important;
-        backdrop-filter: saturate(180%) blur(10px) !important;
-        -webkit-backdrop-filter: saturate(180%) blur(10px) !important;
-        height: auto !important;
-        min-height: 3rem !important;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
-        z-index: 9000 !important;
-    }
-    /* Make Streamlit's native sidebar collapse / expand toggle
-       reliably visible. We don't change its position — Streamlit's
-       own JS handles open/close. We only override visibility + give
-       it a tap-target size. */
-    button[kind="header"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="baseButton-headerNoPadding"] {
-        display: inline-flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        min-width: 40px !important;
-        min-height: 40px !important;
-        z-index: 9001 !important;
-    }
-
-    /* Mobile typography tweaks (hero is huge by default) */
+    /* Sidebar toggle is handled by our universal floating button —
+       no header bar / native-toggle CSS needed here. Just shrink the
+       hero typography so the page fits a phone. */
     .swsa-letter { width: 48px !important; height: 48px !important; font-size: 1.4rem !important; border-radius: 12px !important; }
     .swsa-full-name { font-size: 0.65rem !important; gap: 0.3rem !important; letter-spacing: 1.5px !important; }
     .swsa-tagline { font-size: 0.95rem !important; }
@@ -181,12 +151,8 @@ header[data-testid="stHeader"] {
     .sc-section-h { font-size: 1.4rem !important; }
 }
 
-@media (max-width: 767px) and (prefers-color-scheme: dark) {
-    header[data-testid="stHeader"] {
-        background: rgba(15, 23, 42, 0.88) !important;
-        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-    }
-}
+/* (mobile dark-mode header tweak removed; no longer needed since the
+   header isn't being styled per-mobile any more) */
 
 /* ── Global ────────────────────────────────────────────────── */
 html, body, .stApp {
@@ -693,13 +659,12 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
-#  SCROLL-TO-TOP + MOBILE FLOATING SIDEBAR TOGGLE — both delivered as a
-#  single zero-height iframe. The script:
-#    1. Scrolls the parent window to the top on every render.
-#    2. Injects a floating ☰ button into the parent document that's
-#       only visible on mobile (< 768px) when the sidebar is closed.
-#       Tapping it triggers Streamlit's own toggle (or, as a hard
-#       fallback, slides the sidebar in directly).
+#  SCROLL-TO-TOP + UNIVERSAL SIDEBAR TOGGLE — bypasses Streamlit's
+#  flaky native sidebar collapse. We control the sidebar's visibility
+#  via a single class on <html> (`swsa-sb-collapsed`) — see CSS above
+#  for the rules that hide / show it. The button below is the only
+#  toggle for both desktop and mobile, and remembers state in
+#  localStorage so refreshes don't re-open a closed sidebar.
 components.html(
     """<!doctype html><html><head><style>
 html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;background:transparent;}
@@ -709,8 +674,9 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
   try {
     var win = window.parent || window;
     var doc = win.document;
+    var rootHtml = doc.documentElement;
 
-    /* ───── 1. Scroll to top ───── */
+    /* ───── Scroll to top ───── */
     var scroller = doc.scrollingElement || doc.documentElement || doc.body;
     var go = function() {
       try { win.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
@@ -722,36 +688,61 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
     setTimeout(go, 80);
     setTimeout(go, 250);
 
-    /* ───── 2. Floating sidebar toggle (mobile) ───── */
-    var BTN_ID = 'swsa-mobile-toggle';
+    /* ───── Universal sidebar toggle ───── */
+    var KEY = 'swsa-sb-collapsed';
+    var COLLAPSED_CLASS = 'swsa-sb-collapsed';
+    var BTN_ID = 'swsa-sb-toggle';
+
+    function isCollapsed() {
+      return rootHtml.classList.contains(COLLAPSED_CLASS);
+    }
+    function setCollapsed(c) {
+      if (c) rootHtml.classList.add(COLLAPSED_CLASS);
+      else rootHtml.classList.remove(COLLAPSED_CLASS);
+      try { win.localStorage.setItem(KEY, c ? '1' : '0'); } catch(e) {}
+      updateBtnIcon();
+    }
+
+    /* Restore previous state on first load this session */
+    if (!win._swsaSbInited) {
+      win._swsaSbInited = true;
+      try {
+        if (win.localStorage.getItem(KEY) === '1') {
+          rootHtml.classList.add(COLLAPSED_CLASS);
+        }
+      } catch(e) {}
+    }
+
     function ensureBtn() {
-      if (doc.getElementById(BTN_ID)) return doc.getElementById(BTN_ID);
+      var existing = doc.getElementById(BTN_ID);
+      if (existing) return existing;
       var btn = doc.createElement('button');
       btn.id = BTN_ID;
-      btn.setAttribute('aria-label', 'Open sidebar');
-      btn.innerHTML = '<span style="display:inline-block;line-height:1">&#9776;</span>';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Toggle sidebar');
       btn.style.cssText = [
         'position:fixed',
         'top:12px',
         'left:12px',
         'z-index:100000',
-        'width:44px',
-        'height:44px',
+        'width:42px',
+        'height:42px',
         'border-radius:10px',
         'background:#ffffff',
-        'border:1px solid rgba(15,23,42,0.12)',
         'color:#1B2A3D',
-        'font-size:22px',
-        'font-weight:600',
-        'cursor:pointer',
-        'box-shadow:0 4px 14px rgba(15,23,42,0.20)',
-        'display:none',
+        'border:1px solid rgba(15,23,42,0.12)',
+        'box-shadow:0 4px 14px rgba(15,23,42,0.18)',
+        'display:inline-flex',
         'align-items:center',
         'justify-content:center',
+        'font-size:22px',
+        'font-weight:700',
+        'cursor:pointer',
         'padding:0',
-        'font-family:system-ui,-apple-system,sans-serif'
+        'font-family:system-ui,-apple-system,sans-serif',
+        'line-height:1',
+        '-webkit-tap-highlight-color:transparent'
       ].join(';');
-      // Dark-mode tweak via prefers-color-scheme
       if (win.matchMedia && win.matchMedia('(prefers-color-scheme: dark)').matches) {
         btn.style.background = '#1E293B';
         btn.style.color = '#E2E8F0';
@@ -760,66 +751,22 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
       btn.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        var nativeToggle = doc.querySelector('[data-testid="stSidebarCollapseButton"]')
-                       || doc.querySelector('[data-testid="collapsedControl"]')
-                       || doc.querySelector('[data-testid="stSidebarCollapsedControl"]')
-                       || doc.querySelector('[data-testid="baseButton-headerNoPadding"]')
-                       || doc.querySelector('header[data-testid="stHeader"] button');
-        if (nativeToggle) {
-          nativeToggle.click();
-          return;
-        }
-        // Hard fallback: directly slide the sidebar in
-        var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-        if (sidebar) {
-          sidebar.style.transform = 'translateX(0)';
-          sidebar.style.visibility = 'visible';
-          sidebar.setAttribute('aria-expanded', 'true');
-        }
+        setCollapsed(!isCollapsed());
       });
       doc.body.appendChild(btn);
       return btn;
     }
 
-    function isSidebarClosed() {
-      var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-      if (!sidebar) return false;
-      // Various ways Streamlit might mark a closed sidebar
-      if (sidebar.getAttribute('aria-expanded') === 'false') return true;
-      var rect = sidebar.getBoundingClientRect();
-      if (rect.right <= 0) return true;          // off-screen left
-      if (rect.width < 5) return true;           // collapsed to nothing
-      var t = (sidebar.style.transform || getComputedStyle(sidebar).transform || '');
-      if (t.indexOf('-100%') >= 0) return true;
-      if (t.indexOf('matrix') >= 0 && t.indexOf('-') >= 0) return true;
-      return false;
-    }
-
-    function updateBtn() {
+    function updateBtnIcon() {
       var btn = ensureBtn();
-      var mobile = win.innerWidth < 768;
-      if (!mobile) { btn.style.display = 'none'; return; }
-      btn.style.display = isSidebarClosed() ? 'inline-flex' : 'none';
+      btn.innerHTML = isCollapsed()
+        ? '<span style="display:inline-block;line-height:1">&#9776;</span>'   // ☰  (open)
+        : '<span style="display:inline-block;line-height:1;font-size:24px">&times;</span>'; // ×  (close)
+      btn.setAttribute('title', isCollapsed() ? 'Open sidebar' : 'Close sidebar');
     }
 
-    updateBtn();
-    setTimeout(updateBtn, 200);
-    setTimeout(updateBtn, 600);
-
-    if (!win._swsaToggleListenersAttached) {
-      win._swsaToggleListenersAttached = true;
-      win.addEventListener('resize', updateBtn);
-      try {
-        var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-        if (sidebar && win.MutationObserver) {
-          var mo = new win.MutationObserver(updateBtn);
-          mo.observe(sidebar, {attributes:true, attributeFilter:['aria-expanded','style','class']});
-        }
-      } catch(e) {}
-      // Polling fallback for browsers / Streamlit versions where the
-      // mutation observer doesn't catch the toggle.
-      setInterval(updateBtn, 700);
-    }
+    ensureBtn();
+    updateBtnIcon();
   } catch(e) {}
 })();
 </script>
