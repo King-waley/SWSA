@@ -104,41 +104,61 @@ button[kind="header"],
     margin: 0 !important;
 }
 
-/* ── Top nav bar ────────────────────────────────────────────── */
+/* ── Side nav (custom-built — Streamlit's own sidebar is hidden) ──
+   The same `swsa-navbar` container, but pinned to the left edge as a
+   vertical panel. Streamlit's horizontal column layout inside is
+   force-stacked vertically via flex-direction:column. */
 .st-key-swsa-navbar {
-    position: sticky !important;
+    position: fixed !important;
     top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: 260px !important;
     z-index: 999 !important;
-    background: rgba(255, 255, 255, 0.94) !important;
-    backdrop-filter: saturate(180%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(12px) !important;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
-    padding: 0.65rem 0.85rem !important;
-    margin: -1rem -1rem 1rem -1rem !important;
-    box-shadow: 0 2px 14px rgba(15, 23, 42, 0.04) !important;
-}
-@media (prefers-color-scheme: dark) {
-    .st-key-swsa-navbar {
-        background: rgba(15, 23, 42, 0.92) !important;
-        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-    }
+    background: linear-gradient(180deg, #1B2A3D 0%, #0F1923 100%) !important;
+    color: #CBD5E1 !important;
+    padding: 1rem 0.8rem !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
 }
 
-/* Brand block on the left — coloured letter blocks */
+/* Force every horizontal row inside the navbar to stack vertically */
+.st-key-swsa-navbar [data-testid="stHorizontalBlock"],
+.st-key-swsa-navbar [data-testid="stColumn"] > div {
+    flex-direction: column !important;
+    gap: 0.4rem !important;
+    align-items: stretch !important;
+    width: 100% !important;
+}
+.st-key-swsa-navbar [data-testid="stColumn"] {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+}
+
+/* Brand block — vertical row of letters fits the narrow column */
 .navbar-brand {
     display: inline-flex;
-    gap: 4px;
+    gap: 5px;
     align-items: center;
-    padding-left: 0.25rem;
+    padding: 0.25rem 0 0.5rem;
+    justify-content: center;
+    width: 100%;
 }
 .navbar-brand-letter {
-    width: 30px; height: 30px;
+    width: 36px; height: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 9px;
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     color: #fff;
     letter-spacing: -0.5px;
 }
@@ -147,19 +167,49 @@ button[kind="header"],
 .navbar-brand-letter.l3 { background: linear-gradient(145deg, #7B1FA2, #BA68C8); }
 .navbar-brand-letter.l4 { background: linear-gradient(145deg, #E65100, #FF9800); }
 
-/* Tighten spacing of Streamlit's column rows inside the navbar */
-.st-key-swsa-navbar [data-testid="stHorizontalBlock"] {
-    gap: 0.5rem !important;
-    align-items: center !important;
-}
-.st-key-swsa-navbar .stButton button,
-.st-key-swsa-navbar .stPopover button {
-    height: 38px !important;
-    min-height: 38px !important;
-    padding: 0 0.6rem !important;
-    font-size: 0.85rem !important;
-    border-radius: 8px !important;
+/* Buttons inside the side nav — left-aligned text, dark theme */
+.st-key-swsa-navbar .stButton > button,
+.st-key-swsa-navbar .stPopover > div > button {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #CBD5E1 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    height: auto !important;
+    min-height: 40px !important;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.88rem !important;
+    border-radius: 9px !important;
     white-space: nowrap !important;
+    width: 100% !important;
+    transition: all 0.18s ease !important;
+}
+.st-key-swsa-navbar .stButton > button:hover,
+.st-key-swsa-navbar .stPopover > div > button:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: #F1F5F9 !important;
+}
+.st-key-swsa-navbar .stButton > button[kind="primary"],
+.st-key-swsa-navbar .stButton > button:disabled {
+    background: linear-gradient(135deg, #2D6A4F, #52B788) !important;
+    color: #ffffff !important;
+    border: none !important;
+    opacity: 1 !important;
+}
+
+/* Popover content sits over content — let it breathe */
+.st-key-swsa-navbar [data-testid="stPopover"] {
+    width: 100% !important;
+}
+
+/* Push the main page content to the right of the side nav (desktop) */
+@media (min-width: 768px) {
+    .stMainBlockContainer,
+    section.main > div,
+    .block-container {
+        padding-left: 280px !important;
+    }
 }
 
 /* ── Sub-nav for chat mode (conversations dropdown + new chat) ── */
@@ -169,16 +219,26 @@ button[kind="header"],
 }
 .st-key-swsa-chat-subnav [data-testid="stSelectbox"] label { display: none; }
 
-/* ── Mobile: condense the navbar so it fits in one row ─────── */
+/* ── Mobile: side nav becomes a thinner strip; main content shifts
+       less aggressively so there's still room for chat content. */
 @media (max-width: 767px) {
-    .navbar-brand-letter { width: 24px; height: 24px; font-size: 0.78rem; }
-    .st-key-swsa-navbar .stButton button,
-    .st-key-swsa-navbar .stPopover button {
-        font-size: 0.72rem !important;
-        padding: 0 0.35rem !important;
-        height: 34px !important;
+    .st-key-swsa-navbar {
+        width: 220px !important;
+        padding: 0.6rem 0.5rem !important;
     }
-    .st-key-swsa-navbar [data-testid="stHorizontalBlock"] { gap: 0.25rem !important; }
+    .navbar-brand-letter { width: 28px; height: 28px; font-size: 0.85rem; }
+    .st-key-swsa-navbar .stButton > button,
+    .st-key-swsa-navbar .stPopover > div > button {
+        font-size: 0.78rem !important;
+        padding: 0.45rem 0.6rem !important;
+        min-height: 36px !important;
+    }
+    .stMainBlockContainer,
+    section.main > div,
+    .block-container {
+        padding-left: 230px !important;
+        padding-right: 0.5rem !important;
+    }
 }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
