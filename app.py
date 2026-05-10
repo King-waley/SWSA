@@ -1127,26 +1127,27 @@ if is_running_on_railway() and not is_persistent_db():
 # in @st.cache_resource. The `key` argument handles dedup across reruns.
 cookies = stx.CookieManager(key="swsa_cookie_mgr")
 _session_token = cookies.get(SESSION_COOKIE_NAME)
-# get_all() returns None until the component has synced its cookies from
-# the browser. Once synced it returns a dict (possibly empty if no cookies
-# were set). This is the only reliable way to distinguish "cookies not
-# loaded yet" from "cookies loaded, no session set".
-_cookies_synced = cookies.get_all() is not None
 
-# extra-streamlit-components loads cookies asynchronously: on the very
-# first render after a page refresh (F5), .get(...) returns None even
-# if the cookie exists, then a few hundred ms later the component
-# triggers a rerun with the real value. Without bridging this gap the
-# user briefly sees the auth/showcase screen on every refresh — looks
-# like a forced logout. Loop the splash for up to ~3 seconds (15
-# attempts × 200ms) waiting for cookies to sync before falling through
-# to the auth screen.
-_COOKIE_MAX_ATTEMPTS = 15
+# extra-streamlit-components loads cookies asynchronously via a JS
+# component round-trip: on the very first render after a page refresh
+# (F5), .get(...) returns None even if the cookie exists in the browser.
+# A couple hundred ms later the component delivers the cookie and a
+# rerun fires with the real value. Without bridging this gap the user
+# briefly sees the auth/showcase screen on every refresh — looks like
+# a forced logout. There's no public API to distinguish "cookies not
+# loaded yet" from "cookies loaded, no session set" (cookies.get_all()
+# returns {} in both cases), so we just retry blindly: loop the splash
+# up to 20 times with 200ms between attempts (~4s total). The longer
+# window matters for mobile pull-to-refresh, where the websocket
+# reconnection can take a second or two by itself. For a returning
+# user with a cookie, the splash exits as soon as the cookie syncs
+# (typically 200-600ms). For a new user with no cookie, this adds a
+# one-time ~4s delay before the showcase appears.
+_COOKIE_MAX_ATTEMPTS = 20
 _cookie_attempts = st.session_state.get("_cookie_attempts", 0)
 if (
     ("user" not in st.session_state or st.session_state.user is None)
     and not _session_token
-    and not _cookies_synced
     and _cookie_attempts < _COOKIE_MAX_ATTEMPTS
 ):
     st.session_state._cookie_attempts = _cookie_attempts + 1
