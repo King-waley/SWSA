@@ -90,12 +90,10 @@ header[data-testid="stHeader"] {
     height: auto !important;
 }
 
-/* ── Custom sidebar toggle — bypasses Streamlit's flaky native one ──
-   We hide Streamlit's own toggle entirely and use our own JS-driven
-   button (#swsa-sb-toggle, injected via the components.html script).
-   Sidebar visibility is controlled by a class on <html>: when
-   `html.swsa-sb-collapsed` is present, the sidebar slides off-screen
-   and the layout reclaims the space.                                */
+/* ── Custom sidebar toggle — bypasses Streamlit's flaky native one.
+   Hide Streamlit's own toggle. Visibility is controlled by Python:
+   when the sidebar should be hidden, we conditionally inject a
+   second <style> that translateX(-100%)'s the sidebar off-screen. */
 button[kind="header"],
 [data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebarCollapsedControl"],
@@ -108,26 +106,51 @@ section[data-testid="stSidebar"] {
     transition: transform 0.25s ease, margin-left 0.25s ease !important;
 }
 
-/* Collapsed state: slide sidebar off the left edge */
-html.swsa-sb-collapsed section[data-testid="stSidebar"] {
-    transform: translateX(-100%) !important;
-    visibility: visible !important;
-}
-/* On desktop, also negative-margin the sidebar so the main content
-   reclaims its 21rem of space. On mobile the sidebar is already a
-   fixed overlay, no margin to reclaim. */
-@media (min-width: 768px) {
-    html.swsa-sb-collapsed section[data-testid="stSidebar"] {
-        margin-left: -22rem !important;
-    }
-}
-
 /* Default expanded width on desktop */
 @media (min-width: 768px) {
     section[data-testid="stSidebar"] {
         min-width: 21rem !important;
         width: 21rem !important;
     }
+}
+
+/* Floating "open sidebar" link, only rendered (by Python) when the
+   sidebar is collapsed. Styled here so the link is a real button. */
+a#swsa-sb-open-link {
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 100000 !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #1B2A3D !important;
+    border: 1px solid rgba(15, 23, 42, 0.14) !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.20) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    line-height: 1 !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+a#swsa-sb-open-link:hover {
+    background: #F8FAFC !important;
+    transform: translateY(-1px);
+    transition: transform 0.15s ease;
+}
+@media (prefers-color-scheme: dark) {
+    a#swsa-sb-open-link {
+        background: #1E293B !important;
+        color: #E2E8F0 !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+    a#swsa-sb-open-link:hover { background: #334155 !important; }
 }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
@@ -659,12 +682,7 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
-#  SCROLL-TO-TOP + UNIVERSAL SIDEBAR TOGGLE — bypasses Streamlit's
-#  flaky native sidebar collapse. We control the sidebar's visibility
-#  via a single class on <html> (`swsa-sb-collapsed`) — see CSS above
-#  for the rules that hide / show it. The button below is the only
-#  toggle for both desktop and mobile, and remembers state in
-#  localStorage so refreshes don't re-open a closed sidebar.
+#  SCROLL-TO-TOP — invisible iframe whose body content is forced to 0×0
 components.html(
     """<!doctype html><html><head><style>
 html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;background:transparent;}
@@ -674,9 +692,6 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
   try {
     var win = window.parent || window;
     var doc = win.document;
-    var rootHtml = doc.documentElement;
-
-    /* ───── Scroll to top ───── */
     var scroller = doc.scrollingElement || doc.documentElement || doc.body;
     var go = function() {
       try { win.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
@@ -687,86 +702,6 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
     go();
     setTimeout(go, 80);
     setTimeout(go, 250);
-
-    /* ───── Universal sidebar toggle ───── */
-    var KEY = 'swsa-sb-collapsed';
-    var COLLAPSED_CLASS = 'swsa-sb-collapsed';
-    var BTN_ID = 'swsa-sb-toggle';
-
-    function isCollapsed() {
-      return rootHtml.classList.contains(COLLAPSED_CLASS);
-    }
-    function setCollapsed(c) {
-      if (c) rootHtml.classList.add(COLLAPSED_CLASS);
-      else rootHtml.classList.remove(COLLAPSED_CLASS);
-      try { win.localStorage.setItem(KEY, c ? '1' : '0'); } catch(e) {}
-      updateBtnIcon();
-    }
-
-    /* Restore previous state on first load this session */
-    if (!win._swsaSbInited) {
-      win._swsaSbInited = true;
-      try {
-        if (win.localStorage.getItem(KEY) === '1') {
-          rootHtml.classList.add(COLLAPSED_CLASS);
-        }
-      } catch(e) {}
-    }
-
-    function ensureBtn() {
-      var existing = doc.getElementById(BTN_ID);
-      if (existing) return existing;
-      var btn = doc.createElement('button');
-      btn.id = BTN_ID;
-      btn.type = 'button';
-      btn.setAttribute('aria-label', 'Toggle sidebar');
-      btn.style.cssText = [
-        'position:fixed',
-        'top:12px',
-        'left:12px',
-        'z-index:100000',
-        'width:42px',
-        'height:42px',
-        'border-radius:10px',
-        'background:#ffffff',
-        'color:#1B2A3D',
-        'border:1px solid rgba(15,23,42,0.12)',
-        'box-shadow:0 4px 14px rgba(15,23,42,0.18)',
-        'display:inline-flex',
-        'align-items:center',
-        'justify-content:center',
-        'font-size:22px',
-        'font-weight:700',
-        'cursor:pointer',
-        'padding:0',
-        'font-family:system-ui,-apple-system,sans-serif',
-        'line-height:1',
-        '-webkit-tap-highlight-color:transparent'
-      ].join(';');
-      if (win.matchMedia && win.matchMedia('(prefers-color-scheme: dark)').matches) {
-        btn.style.background = '#1E293B';
-        btn.style.color = '#E2E8F0';
-        btn.style.borderColor = 'rgba(255,255,255,0.10)';
-      }
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        setCollapsed(!isCollapsed());
-      });
-      doc.body.appendChild(btn);
-      return btn;
-    }
-
-    function updateBtnIcon() {
-      var btn = ensureBtn();
-      btn.innerHTML = isCollapsed()
-        ? '<span style="display:inline-block;line-height:1">&#9776;</span>'   // ☰  (open)
-        : '<span style="display:inline-block;line-height:1;font-size:24px">&times;</span>'; // ×  (close)
-      btn.setAttribute('title', isCollapsed() ? 'Open sidebar' : 'Close sidebar');
-    }
-
-    ensureBtn();
-    updateBtnIcon();
   } catch(e) {}
 })();
 </script>
@@ -774,6 +709,51 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
     height=0,
     width=0,
 )
+
+
+#  SIDEBAR COLLAPSE — driven by st.session_state + a query-param URL
+#  link, no JS injection needed. The "Open sidebar" link is a real
+#  <a href="?sb=show"> so it works without any client-side script;
+#  the "Close sidebar" button at the top of the sidebar is a normal
+#  st.button. CSS injected conditionally hides the sidebar.
+if "sb_collapsed" not in st.session_state:
+    st.session_state.sb_collapsed = False
+
+_qp_sb = st.query_params.get("sb")
+if _qp_sb == "show":
+    st.session_state.sb_collapsed = False
+    try:
+        del st.query_params["sb"]
+    except Exception:  # noqa: BLE001
+        pass
+    st.rerun()
+elif _qp_sb == "hide":
+    st.session_state.sb_collapsed = True
+    try:
+        del st.query_params["sb"]
+    except Exception:  # noqa: BLE001
+        pass
+    st.rerun()
+
+if st.session_state.sb_collapsed:
+    st.markdown(
+        """
+        <style>
+        section[data-testid="stSidebar"] {
+            transform: translateX(-100%) !important;
+        }
+        @media (min-width: 768px) {
+            section[data-testid="stSidebar"] {
+                margin-left: -22rem !important;
+            }
+        }
+        </style>
+        <a id="swsa-sb-open-link" href="?sb=show"
+           title="Open sidebar" aria-label="Open sidebar"
+           target="_self">&#9776;</a>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 #  DATABASE — bootstrap schema once per process
@@ -1014,6 +994,16 @@ def _load_conversation(conversation_id: int) -> None:
 
 #  SIDEBAR — clean nav-style layout
 with st.sidebar:
+    # ── Close-sidebar button ────────────────────────────────
+    if st.button(
+        "× Close sidebar",
+        key="sb_close_btn",
+        use_container_width=True,
+        help="Hide the sidebar — bring it back via the floating ☰ button.",
+    ):
+        st.session_state.sb_collapsed = True
+        st.rerun()
+
     # ── Brand ───────────────────────────────────────────────
     st.markdown(
         """
