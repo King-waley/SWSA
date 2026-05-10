@@ -56,23 +56,86 @@ st.markdown("""
 
 /* ── Root Variables ────────────────────────────────────────── */
 :root {
-    --c1: #2D6A4F;   /* S — green  */
+    /* Brand */
+    --c1: #2D6A4F;        /* S — green  */
     --c1-light: #52B788;
-    --c2: #1565C0;   /* W — blue   */
+    --c2: #1565C0;        /* W — blue   */
     --c2-light: #42A5F5;
-    --c3: #7B1FA2;   /* S — purple */
+    --c3: #7B1FA2;        /* S — purple */
     --c3-light: #BA68C8;
-    --c4: #E65100;   /* A — orange */
+    --c4: #E65100;        /* A — orange */
     --c4-light: #FF9800;
+    --primary: #2D6A4F;
+    --primary-soft: rgba(45, 106, 79, 0.10);
+
+    /* Surfaces */
+    --bg-page: #F7F8FB;
+    --bg-page-grad: linear-gradient(160deg, #F0F4F8 0%, #FAFBFD 40%, #F5F0FF 100%);
+    --surface: #FFFFFF;
+    --surface-soft: #F1F5F9;
+    --surface-sunken: #F8FAFC;
+    --surface-translucent: rgba(255, 255, 255, 0.78);
+    --border: rgba(15, 23, 42, 0.08);
+    --border-strong: rgba(15, 23, 42, 0.14);
+
+    /* Text */
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --text-on-dark: #F1F5F9;
+
+    /* Dark sidebar */
     --dark:   #1B2A3D;
     --darker: #0F1923;
     --pale-green: #D8F3DC;
-    --radius-lg: 20px;
-    --radius-md: 14px;
-    --radius-sm: 10px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
-    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+
+    /* Radii */
+    --radius-xl: 22px;
+    --radius-lg: 18px;
+    --radius-md: 13px;
+    --radius-sm: 9px;
+    --radius-pill: 999px;
+
+    /* Shadows — multi-layer for depth */
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 2px 6px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.07);
+    --shadow-lg: 0 4px 16px rgba(15, 23, 42, 0.06), 0 18px 44px rgba(15, 23, 42, 0.10);
+    --shadow-xl: 0 12px 40px rgba(15, 23, 42, 0.10), 0 30px 80px rgba(15, 23, 42, 0.14);
+    --shadow-glow: 0 8px 26px rgba(45, 106, 79, 0.22);
+
+    /* Motion */
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --t-fast: 0.15s var(--ease-snap);
+    --t-base: 0.25s var(--ease-snap);
+    --t-slow: 0.45s var(--ease);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-page: #0B1220;
+        --bg-page-grad: linear-gradient(160deg, #0F172A 0%, #131E33 40%, #1A1530 100%);
+        --surface: #1E293B;
+        --surface-soft: #233049;
+        --surface-sunken: #15203A;
+        --surface-translucent: rgba(30, 41, 59, 0.80);
+        --border: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.16);
+        --text-primary: #F1F5F9;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+    }
+}
+
+/* ── Refined global background (subtle radial accents on top of grad) ── */
+.stApp {
+    background:
+        radial-gradient(900px 600px at 12% -5%, rgba(82,183,136,0.10), transparent 60%),
+        radial-gradient(900px 600px at 95% 15%, rgba(123,31,162,0.10), transparent 60%),
+        radial-gradient(800px 500px at 50% 110%, rgba(21,101,192,0.10), transparent 60%),
+        var(--bg-page-grad) !important;
 }
 
 /* ── Hide Streamlit chrome (but KEEP the header — it holds the
@@ -240,25 +303,51 @@ section[data-testid="stSidebar"] .stTextInput > div > div {
 section[data-testid="stSidebar"] .stTextInput input { color: #E2E8F0 !important; }
 section[data-testid="stSidebar"] .stTextInput input::placeholder { color: #64748B !important; }
 section[data-testid="stSidebar"] .stButton > button {
-    background: rgba(255,255,255,0.06) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     color: #CBD5E1 !important;
-    border-radius: var(--radius-sm) !important;
-    transition: all 0.3s ease !important;
+    border-radius: var(--radius-md) !important;
+    transition: all var(--t-base) !important;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 500 !important;
+    text-align: left !important;
+    padding: 0.55rem 0.85rem !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+section[data-testid="stSidebar"] .stButton > button::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 0;
+    background: linear-gradient(180deg, var(--c1-light), var(--c2-light));
+    border-radius: 0 3px 3px 0;
+    transition: height var(--t-base);
 }
 section[data-testid="stSidebar"] .stButton > button:hover {
-    background: rgba(255,255,255,0.12) !important;
-    border-color: rgba(255,255,255,0.20) !important;
-    transform: translateY(-1px) !important;
+    background: rgba(255,255,255,0.09) !important;
+    border-color: rgba(255,255,255,0.18) !important;
+    color: #F1F5F9 !important;
+    transform: translateX(2px) !important;
+}
+section[data-testid="stSidebar"] .stButton > button:hover::before {
+    height: 60%;
 }
 section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, var(--c1), var(--c1-light)) !important;
-    border: none !important; color: #fff !important;
+    border: 1px solid rgba(82, 183, 136, 0.4) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 14px rgba(45, 106, 79, 0.32) !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"]::before {
+    height: 70%;
+    background: rgba(255, 255, 255, 0.6);
 }
 section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
-    box-shadow: 0 4px 20px rgba(45,106,79,0.4) !important;
+    box-shadow: 0 6px 22px rgba(45, 106, 79, 0.5) !important;
+    transform: translateX(2px) translateY(-1px) !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stMetric"] {
     background: rgba(255,255,255,0.04); border-radius: var(--radius-sm); padding: 0.6rem;
@@ -282,8 +371,29 @@ section[data-testid="stSidebar"] .stAlert {
 /* ── SWSA Hero Logo ────────────────────────────────────────── */
 .swsa-hero {
     text-align: center;
-    padding: 2rem 0 1rem;
-    animation: heroIn 1s ease-out;
+    padding: 2.5rem 0 1.25rem;
+    animation: heroIn 1.1s var(--ease-snap);
+    position: relative;
+}
+.swsa-hero::before {
+    content: '';
+    position: absolute;
+    top: -10%; left: 50%;
+    transform: translateX(-50%);
+    width: 520px; height: 380px;
+    max-width: 90vw;
+    background:
+        radial-gradient(ellipse at 30% 40%, rgba(82, 183, 136, 0.18), transparent 60%),
+        radial-gradient(ellipse at 70% 50%, rgba(66, 165, 245, 0.14), transparent 60%),
+        radial-gradient(ellipse at 50% 70%, rgba(186, 104, 200, 0.10), transparent 65%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+    animation: heroGlow 8s ease-in-out infinite alternate;
+}
+@keyframes heroGlow {
+    from { transform: translateX(-50%) scale(1); opacity: 0.85; }
+    to   { transform: translateX(-50%) scale(1.08); opacity: 1; }
 }
 @keyframes heroIn {
     from { opacity: 0; transform: translateY(-30px) scale(0.95); }
@@ -291,35 +401,59 @@ section[data-testid="stSidebar"] .stAlert {
 }
 .swsa-logo-row {
     display: inline-flex;
-    gap: 8px;
-    margin-bottom: 0.75rem;
-    perspective: 800px;
+    gap: 10px;
+    margin-bottom: 0.85rem;
+    perspective: 1000px;
+    position: relative;
+    z-index: 1;
 }
 .swsa-letter {
-    width: 72px; height: 72px;
+    width: 76px; height: 76px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 18px;
-    font-size: 2.1rem;
+    border-radius: 20px;
+    font-size: 2.2rem;
     font-weight: 800;
     color: #fff;
     letter-spacing: -0.5px;
-    box-shadow: var(--shadow-md);
-    transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), box-shadow 0.35s;
+    box-shadow:
+        var(--shadow-md),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+    transition: transform 0.4s cubic-bezier(.34,1.56,.64,1), box-shadow 0.4s var(--ease-snap);
     cursor: default;
     position: relative;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 .swsa-letter::after {
     content: '';
     position: absolute; inset: 0;
-    border-radius: 18px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0));
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0) 55%);
     pointer-events: none;
 }
+.swsa-letter::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 22px;
+    background: inherit;
+    filter: blur(14px);
+    opacity: 0.45;
+    z-index: -1;
+    transition: opacity 0.4s var(--ease-snap), filter 0.4s var(--ease-snap);
+}
 .swsa-letter:hover {
-    transform: translateY(-8px) rotateX(-8deg) scale(1.06);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-10px) rotateX(-10deg) scale(1.08);
+    box-shadow:
+        var(--shadow-lg),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+}
+.swsa-letter:hover::before {
+    opacity: 0.7;
+    filter: blur(20px);
 }
 .l1 { background: linear-gradient(145deg, var(--c1), var(--c1-light)); }
 .l2 { background: linear-gradient(145deg, var(--c2), var(--c2-light)); }
@@ -329,37 +463,46 @@ section[data-testid="stSidebar"] .stAlert {
 .swsa-full-name {
     display: flex;
     justify-content: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
+    gap: 0.55rem;
+    font-size: 0.78rem;
     font-weight: 700;
-    letter-spacing: 2.5px;
+    letter-spacing: 2.8px;
     text-transform: uppercase;
-    margin-top: 0.6rem;
+    margin-top: 0.75rem;
+    position: relative;
+    z-index: 1;
 }
 .fn1 { color: var(--c1); }
 .fn2 { color: var(--c2); }
 .fn3 { color: var(--c3); }
 .fn4 { color: var(--c4); }
-.fn-dot { color: #94A3B8; }
+.fn-dot { color: var(--text-muted); opacity: 0.6; }
 
 .swsa-desc {
-    font-size: 0.7rem;
-    letter-spacing: 4px;
+    font-size: 0.72rem;
+    letter-spacing: 4.5px;
     text-transform: uppercase;
-    color: #94A3B8;
-    margin-top: 0.35rem;
-    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 0.45rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
 }
 .swsa-tagline {
-    font-size: 1.15rem;
-    color: #475569;
-    margin-top: 1rem;
-    font-weight: 400;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-top: 1.15rem;
+    font-weight: 500;
     line-height: 1.6;
     text-align: center;
-    animation: fadeIn 1.2s ease-out 0.4s both;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+    animation: fadeIn 1.3s var(--ease-snap) 0.4s both;
+    position: relative;
+    z-index: 1;
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ── Sidebar Mini Logo ─────────────────────────────────────── */
 .sb-logo { text-align: center; padding: 0.6rem 0 0.2rem; }
@@ -424,17 +567,103 @@ div.stCustomComponentV1:has(iframe[height="0"]) {
 
 /* ── Glass Card ────────────────────────────────────────────── */
 .glass-card {
-    background: rgba(255,255,255,0.75);
-    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.85);
-    border-radius: var(--radius-lg);
+    background: var(--surface-translucent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
     box-shadow: var(--shadow-md);
     padding: 1.8rem 2rem;
     margin-bottom: 1.2rem;
-    transition: box-shadow 0.3s;
+    transition: box-shadow var(--t-base), transform var(--t-base), border-color var(--t-base);
+    position: relative;
+    overflow: hidden;
 }
-.glass-card:hover { box-shadow: var(--shadow-lg); }
-.glass-card h4 { color: var(--dark) !important; font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem; }
+.glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--c1-light), var(--c2-light), var(--c3-light), var(--c4-light), transparent);
+    opacity: 0;
+    transition: opacity var(--t-base);
+}
+.glass-card:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+}
+.glass-card:hover::before { opacity: 0.7; }
+.glass-card h4 { color: var(--text-primary) !important; font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem; letter-spacing: -0.2px; }
+
+/* ── Universal polished Streamlit buttons (main area) ───────── */
+.stMainBlockContainer .stButton > button {
+    border-radius: var(--radius-md) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.1px !important;
+    padding: 0.55rem 1rem !important;
+    transition: transform var(--t-fast), box-shadow var(--t-fast),
+                background var(--t-fast), border-color var(--t-fast) !important;
+    box-shadow: var(--shadow-xs) !important;
+}
+.stMainBlockContainer .stButton > button[kind="secondary"] {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-strong) !important;
+}
+.stMainBlockContainer .stButton > button[kind="secondary"]:hover {
+    background: var(--surface-soft) !important;
+    border-color: var(--c1) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+.stMainBlockContainer .stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, var(--c1) 0%, var(--c1-light) 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: var(--shadow-glow) !important;
+}
+.stMainBlockContainer .stButton > button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 32px rgba(45, 106, 79, 0.32) !important;
+    filter: brightness(1.05) !important;
+}
+.stMainBlockContainer .stButton > button:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* Polished form inputs */
+.stMainBlockContainer .stTextInput > div > div,
+.stMainBlockContainer .stTextArea textarea,
+.stMainBlockContainer .stNumberInput input,
+.stMainBlockContainer .stSelectbox > div > div {
+    border-radius: var(--radius-md) !important;
+    border: 1.5px solid var(--border) !important;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast) !important;
+}
+.stMainBlockContainer .stTextInput > div > div:focus-within,
+.stMainBlockContainer .stTextArea textarea:focus,
+.stMainBlockContainer .stNumberInput input:focus,
+.stMainBlockContainer .stSelectbox > div > div:focus-within {
+    border-color: var(--c1) !important;
+    box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12) !important;
+    outline: none !important;
+}
+
+/* Polished Streamlit popovers */
+[data-testid="stPopover"] > button {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-strong) !important;
+    background: var(--surface) !important;
+    transition: all var(--t-fast) !important;
+}
+[data-testid="stPopover"] > button:hover {
+    border-color: var(--c1) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
 
 /* ── Main area buttons ─────────────────────────────────────── */
 .stMainBlockContainer .stColumns div[data-testid="stVerticalBlock"] .stButton > button {
@@ -457,22 +686,36 @@ div.stCustomComponentV1:has(iframe[height="0"]) {
 
 /* ── Info Banner ───────────────────────────────────────────── */
 .info-banner {
-    background: linear-gradient(135deg, var(--pale-green), #E8F5E9);
-    border: 1px solid rgba(45,106,79,0.15);
+    background: linear-gradient(135deg, rgba(82, 183, 136, 0.10), rgba(66, 165, 245, 0.06));
+    border: 1px solid rgba(45, 106, 79, 0.18);
+    border-left: 3px solid var(--c1-light);
     border-radius: var(--radius-md);
-    padding: 1rem 1.2rem; font-size: 0.88rem; color: #1B4332;
-    display: flex; align-items: center; gap: 0.7rem;
-    margin-bottom: 1rem; animation: fadeIn 0.6s ease-out;
+    padding: 1.05rem 1.3rem;
+    font-size: 0.92rem;
+    color: #1B4332;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.1rem;
+    animation: fadeIn 0.5s var(--ease-snap);
+    box-shadow: var(--shadow-sm);
+    line-height: 1.5;
+    font-weight: 500;
 }
-.info-banner-icon { font-size: 1.3rem; }
+.info-banner-icon {
+    font-size: 1.45rem;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(45, 106, 79, 0.20));
+}
 
 /* ── Category Badges ───────────────────────────────────────── */
-.cat-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.5rem; }
+.cat-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.55rem; }
 .cat-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 0.3rem 0.8rem; border-radius: 50px;
-    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2px;
-    animation: badgePop 0.4s cubic-bezier(.34,1.56,.64,1);
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0.32rem 0.85rem; border-radius: var(--radius-pill);
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.2px;
+    box-shadow: var(--shadow-xs);
+    animation: badgePop 0.5s var(--ease-bounce);
 }
 @keyframes badgePop { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
 .cb-mental_health     { background: #D8F3DC; color: #1B4332; }
@@ -507,26 +750,50 @@ div.stCustomComponentV1:has(iframe[height="0"]) {
     50%     { box-shadow: 0 0 0 8px rgba(211,47,47,0); }
 }
 
-/* ── Chat Messages ─────────────────────────────────────────── */
+/* ── Chat Messages — distinct user vs assistant, polished ───── */
 div[data-testid="stChatMessage"] {
     border-radius: var(--radius-lg) !important;
-    border: 1px solid rgba(0,0,0,0.04) !important;
+    border: 1px solid var(--border) !important;
     box-shadow: var(--shadow-sm) !important;
     padding: 1rem 1.2rem !important;
-    margin-bottom: 0.6rem !important;
-    animation: msgIn 0.4s ease-out;
-    background: #fff !important;
-    color: #1E293B !important;
+    margin-bottom: 0.65rem !important;
+    animation: msgIn 0.45s var(--ease) both;
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    transition: box-shadow var(--t-base), transform var(--t-base);
+    position: relative;
 }
+div[data-testid="stChatMessage"]:hover { box-shadow: var(--shadow-md) !important; }
+
+/* Make the avatar a coloured pill so user/assistant turns are easy
+   to distinguish at a glance */
+div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-user"] {
+    background: linear-gradient(135deg, var(--c2), var(--c2-light)) !important;
+    color: white !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
+    background: linear-gradient(135deg, var(--c1), var(--c1-light)) !important;
+    color: white !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
 div[data-testid="stChatMessage"] p,
 div[data-testid="stChatMessage"] li,
 div[data-testid="stChatMessage"] span:not(.cat-badge):not(.sent-badge),
 div[data-testid="stChatMessage"] strong,
 div[data-testid="stChatMessage"] a {
-    color: #1E293B !important;
+    color: var(--text-primary) !important;
 }
-@keyframes msgIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-div[data-testid="stChatMessage"]:has(.stMarkdown) { line-height: 1.65; }
+div[data-testid="stChatMessage"] a {
+    color: var(--c2) !important;
+    text-decoration-color: rgba(21, 101, 192, 0.4) !important;
+}
+@keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.99); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+div[data-testid="stChatMessage"]:has(.stMarkdown) { line-height: 1.7; font-size: 0.96rem; }
 
 /* ── Typing Indicator ──────────────────────────────────────── */
 .typing-dots {
@@ -566,12 +833,25 @@ div[data-testid="stChatMessage"]:has(.stMarkdown) { line-height: 1.65; }
     color: #FFCC80;
 }
 
-/* ── Chat Input ────────────────────────────────────────────── */
-div[data-testid="stChatInput"] { border-radius: var(--radius-lg) !important; overflow: hidden; }
+/* ── Chat Input — elevated pill, glow on focus ──────────────── */
+div[data-testid="stChatInput"] {
+    border-radius: var(--radius-xl) !important;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg) !important;
+    border: 1px solid var(--border) !important;
+    transition: box-shadow var(--t-base), border-color var(--t-base) !important;
+    background: var(--surface) !important;
+}
+div[data-testid="stChatInput"]:focus-within {
+    border-color: var(--c1) !important;
+    box-shadow: 0 12px 40px rgba(45, 106, 79, 0.18) !important;
+}
 div[data-testid="stChatInput"] textarea {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.92rem !important;
-    border-radius: var(--radius-lg) !important;
+    font-size: 0.97rem !important;
+    line-height: 1.5 !important;
+    border-radius: var(--radius-xl) !important;
+    background: transparent !important;
 }
 
 /* ── Expander ──────────────────────────────────────────────── */

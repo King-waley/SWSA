@@ -95,35 +95,55 @@ _SHOWCASE_CSS = """
 .sc-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.8rem;
+    gap: 0.9rem;
     max-width: 1080px;
     margin: 0 auto 3.2rem;
     padding: 0 1rem;
 }
 .sc-stat {
-    background: white;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 1.4rem 1rem;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 18px;
+    padding: 1.5rem 1rem;
     text-align: center;
-    box-shadow: 0 4px 18px rgba(15,23,42,0.04);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 8px 24px rgba(15,23,42,0.05);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
-.sc-stat:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(15,23,42,0.08); }
+.sc-stat::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #52B788, #42A5F5, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.sc-stat:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(15,23,42,0.06), 0 18px 40px rgba(15,23,42,0.10);
+    border-color: rgba(45, 106, 79, 0.20);
+}
+.sc-stat:hover::before { opacity: 1; }
 .sc-stat-num {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     font-weight: 800;
     background: linear-gradient(135deg, #2D6A4F, #1565C0);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     line-height: 1;
+    letter-spacing: -1px;
 }
 .sc-stat-lab {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #64748B;
-    margin-top: 0.4rem;
-    font-weight: 500;
+    margin-top: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
 }
 
 /* ── Section headings ────────────────────────────────────────── */
@@ -168,10 +188,10 @@ _SHOWCASE_CSS = """
 }
 .sc-feature {
     background: white;
-    border: 1px solid #E2E8F0;
-    border-radius: 18px;
-    padding: 1.5rem 1.4rem;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    border: 1px solid #E8EBF0;
+    border-radius: 20px;
+    padding: 1.8rem 1.5rem 1.6rem;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
     position: relative;
     overflow: hidden;
 }
@@ -180,20 +200,42 @@ _SHOWCASE_CSS = """
     position: absolute;
     inset: 0 0 auto 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--c1, #2D6A4F), var(--c2, #1565C0));
+    background: linear-gradient(90deg, #2D6A4F, #1565C0, #7B1FA2);
     opacity: 0;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.3s ease;
+}
+.sc-feature::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(82, 183, 136, 0.12), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
 }
 .sc-feature:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 14px 32px rgba(15,23,42,0.08);
-    border-color: rgba(45,106,79,0.30);
+    transform: translateY(-6px);
+    box-shadow: 0 4px 16px rgba(15,23,42,0.06), 0 24px 50px rgba(15,23,42,0.10);
+    border-color: rgba(45,106,79,0.25);
 }
 .sc-feature:hover::before { opacity: 1; }
+.sc-feature:hover::after { opacity: 1; }
 .sc-feature-icon {
-    font-size: 2rem;
-    margin-bottom: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(45, 106, 79, 0.10), rgba(21, 101, 192, 0.08));
+    border: 1px solid rgba(45, 106, 79, 0.12);
+    font-size: 1.6rem;
+    margin-bottom: 0.9rem;
     line-height: 1;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sc-feature:hover .sc-feature-icon {
+    transform: scale(1.08) rotate(-4deg);
 }
 .sc-feature-h {
     font-size: 1.05rem;
@@ -280,15 +322,27 @@ _SHOWCASE_CSS = """
 /* ── Final CTA ───────────────────────────────────────────────── */
 .sc-final-cta {
     background:
-        linear-gradient(135deg, rgba(45,106,79,0.95), rgba(21,101,192,0.95)),
-        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.20), transparent 50%);
+        linear-gradient(135deg, rgba(45,106,79,0.96) 0%, rgba(21,101,192,0.96) 60%, rgba(123,31,162,0.92) 100%),
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.25), transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.12), transparent 50%);
     color: white;
-    border-radius: 28px;
-    padding: 3.5rem 2rem;
+    border-radius: 32px;
+    padding: 4rem 2rem 3.6rem;
     text-align: center;
-    margin: 2rem auto 1rem;
+    margin: 2.5rem auto 1.2rem;
     max-width: 1080px;
-    box-shadow: 0 20px 50px rgba(45,106,79,0.25);
+    box-shadow:
+        0 20px 50px rgba(45,106,79,0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+.sc-final-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 255, 255, 0.18), transparent 70%);
+    pointer-events: none;
 }
 .sc-final-cta h2 {
     font-size: clamp(1.6rem, 3vw, 2.2rem);
