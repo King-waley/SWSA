@@ -1082,6 +1082,63 @@ with st.sidebar:
             st.session_state.mode = _target_mode
             st.rerun()
 
+    # ── Conversations (always visible in the sidebar) ──────
+    st.markdown("---")
+    st.markdown("##### 💬 Conversations")
+    if st.button(
+        "➕ New chat",
+        key="new_chat_btn",
+        use_container_width=True,
+        type="primary",
+    ):
+        _start_new_chat()
+        st.rerun()
+
+    _conversations = list_conversations(_user.id)
+    if _conversations:
+        _options = [("__none__", "— Pick a past conversation —")] + [
+            (str(c["id"]), c["title"]) for c in _conversations
+        ]
+        _option_keys = [k for k, _ in _options]
+        _option_labels = {k: v for k, v in _options}
+        _current_id = (
+            str(st.session_state.conversation_id)
+            if st.session_state.conversation_id
+            else "__none__"
+        )
+        _current_idx = (
+            _option_keys.index(_current_id)
+            if _current_id in _option_keys
+            else 0
+        )
+        _picked = st.selectbox(
+            "Past conversations",
+            _option_keys,
+            index=_current_idx,
+            format_func=lambda k: _option_labels[k],
+            label_visibility="collapsed",
+            key="conv_picker",
+        )
+        if _picked != "__none__" and _picked != _current_id:
+            _load_conversation(int(_picked))
+            st.rerun()
+
+        # Delete current conversation
+        if st.session_state.conversation_id is not None:
+            if st.button(
+                "🗑 Delete current chat",
+                key="del_current_conv_btn",
+                use_container_width=True,
+                help="Permanently delete this conversation",
+            ):
+                delete_conversation(
+                    st.session_state.conversation_id, _user.id
+                )
+                _start_new_chat()
+                st.rerun()
+    else:
+        st.caption("No past conversations yet.")
+
     st.markdown("---")
 
     with st.expander("🚨 Emergency contacts"):
@@ -1114,66 +1171,7 @@ with st.sidebar:
         "In emergencies call 999."
     )
 
-#  CHAT-MODE SUB-NAV: + New chat button + Conversations dropdown
-if _mode == "chat":
-    with st.container(key="swsa-chat-subnav"):
-        _conv_col, _new_col = st.columns([5, 2])
-        with _conv_col:
-            _conversations = list_conversations(_user.id)
-            if _conversations:
-                _options = [("__none__", "— Pick a past conversation —")] + [
-                    (str(c["id"]), c["title"]) for c in _conversations
-                ]
-                _option_keys = [k for k, _ in _options]
-                _option_labels = {k: v for k, v in _options}
-                _current_id = (
-                    str(st.session_state.conversation_id)
-                    if st.session_state.conversation_id
-                    else "__none__"
-                )
-                _current_idx = (
-                    _option_keys.index(_current_id)
-                    if _current_id in _option_keys
-                    else 0
-                )
-                _picked = st.selectbox(
-                    "Conversations",
-                    _option_keys,
-                    index=_current_idx,
-                    format_func=lambda k: _option_labels[k],
-                    label_visibility="collapsed",
-                    key="conv_picker",
-                )
-                if _picked != "__none__" and _picked != _current_id:
-                    _load_conversation(int(_picked))
-                    st.rerun()
-            else:
-                st.caption("No past conversations yet.")
-        with _new_col:
-            if st.button(
-                "➕ New chat",
-                use_container_width=True,
-                key="new_chat_btn",
-                type="primary",
-            ):
-                _start_new_chat()
-                st.rerun()
-
-        # Delete-current-conversation control (small, only when a
-        # conversation is loaded)
-        if st.session_state.conversation_id is not None:
-            _del_col_l, _del_col_r = st.columns([6, 1])
-            with _del_col_r:
-                if st.button(
-                    "🗑",
-                    key="del_current_conv_btn",
-                    help="Delete this conversation",
-                ):
-                    delete_conversation(
-                        st.session_state.conversation_id, _user.id
-                    )
-                    _start_new_chat()
-                    st.rerun()
+# (Conversation picker + New chat moved to the sidebar — see Sidebar block above.)
 
 
 #  HELPERS
