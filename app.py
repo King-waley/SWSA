@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
+import streamlit.components.v1 as components
 import extra_streamlit_components as stx
 
 import config
@@ -682,20 +683,33 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
-#  SCROLL-TO-TOP — applies to *every* render (showcase, auth, admin,
-#  study, community, settings, chat). Streamlit otherwise tends to keep
-#  the previous scroll position after a rerun, leaving users staring at
-#  the bottom of the new page. The <img onerror> trick survives
-#  Streamlit's HTML sanitisation (which strips <script> tags).
-st.markdown(
-    '<div id="swsa-top"></div>'
-    '<img src="" onerror="'
-    "var t=document.getElementById(\'swsa-top\');"
-    "if(t){t.scrollIntoView({behavior:\'instant\',block:\'start\'});}"
-    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\',block:\'start\'});}},80);"
-    "setTimeout(function(){if(t){t.scrollIntoView({behavior:\'instant\',block:\'start\'});}},250);"
-    '" style="display:none">',
-    unsafe_allow_html=True,
+#  SCROLL-TO-TOP — applies to every render so users land at the top
+#  rather than wherever the previous page left them. Uses
+#  components.html (iframe) instead of a raw <img onerror> because
+#  React error #231 fires on inline event-handler strings since
+#  Streamlit 1.42+.
+components.html(
+    """
+    <script>
+    (function() {
+        try {
+            var win = window.parent || window;
+            var doc = win.document;
+            var scroller = doc.scrollingElement || doc.documentElement || doc.body;
+            var go = function() {
+                try { win.scrollTo({top: 0, left: 0, behavior: 'instant'}); } catch(e) {}
+                if (scroller && typeof scroller.scrollTo === 'function') {
+                    try { scroller.scrollTo({top: 0, left: 0, behavior: 'instant'}); } catch(e) {}
+                }
+            };
+            go();
+            setTimeout(go, 80);
+            setTimeout(go, 250);
+        } catch(e) {}
+    })();
+    </script>
+    """,
+    height=0,
 )
 
 
