@@ -94,8 +94,59 @@ header[data-testid="stHeader"] {
    We only style what's INSIDE the sidebar, never hide it or override
    the toggle. Streamlit'''s built-in chevron is the toggle. */
 section[data-testid="stSidebar"] {
+    display: block !important;
+    visibility: visible !important;
     background: linear-gradient(180deg, #1B2A3D 0%, #0F1923 100%) !important;
 }
+
+/* Restore a visible header bar so the native chevron has contrast */
+header[data-testid="stHeader"] {
+    background: rgba(255, 255, 255, 0.92) !important;
+    height: 3rem !important;
+    min-height: 3rem !important;
+    z-index: 99 !important;
+    backdrop-filter: saturate(180%) blur(10px) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+@media (prefers-color-scheme: dark) {
+    header[data-testid="stHeader"] {
+        background: rgba(15, 23, 42, 0.92) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+}
+
+/* Force the native sidebar chevron to be reliably visible + clickable */
+button[kind="header"],
+button[kind="headerNoPadding"],
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+[data-testid="baseButton-headerNoPadding"] {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #ffffff !important;
+    color: #1B2A3D !important;
+    border: 1px solid rgba(15, 23, 42, 0.14) !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    margin: 0.35rem 0.4rem !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10) !important;
+    z-index: 9999 !important;
+}
+@media (prefers-color-scheme: dark) {
+    button[kind="header"],
+    button[kind="headerNoPadding"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [data-testid="baseButton-headerNoPadding"] {
+        background: #1E293B !important;
+        color: #F1F5F9 !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+    }
+}
+
 section[data-testid="stSidebar"] * { color: #CBD5E1 !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
