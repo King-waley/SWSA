@@ -90,183 +90,40 @@ header[data-testid="stHeader"] {
     height: auto !important;
 }
 
-/* ── Hide Streamlit's left sidebar + native toggle entirely.
-   We use a top nav bar (rendered in the main area) instead. */
-section[data-testid="stSidebar"],
-button[kind="header"],
-[data-testid="stSidebarCollapseButton"],
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"],
-[data-testid="baseButton-headerNoPadding"] {
-    display: none !important;
-    visibility: hidden !important;
-    width: 0 !important;
-    margin: 0 !important;
-}
-
-/* ── Side nav (custom-built — Streamlit's own sidebar is hidden) ──
-   The same `swsa-navbar` container, but pinned to the left edge as a
-   vertical panel. Streamlit's horizontal column layout inside is
-   force-stacked vertically via flex-direction:column. */
-.st-key-swsa-navbar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    height: 100vh !important;
-    width: 260px !important;
-    z-index: 999 !important;
+/* ── Native sidebar — let Streamlit handle collapse/expand itself.
+   We only style what's INSIDE the sidebar, never hide it or override
+   the toggle. Streamlit'''s built-in chevron is the toggle. */
+section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #1B2A3D 0%, #0F1923 100%) !important;
+}
+section[data-testid="stSidebar"] * { color: #CBD5E1 !important; }
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] h4,
+section[data-testid="stSidebar"] h5,
+section[data-testid="stSidebar"] strong { color: #F1F5F9 !important; }
+
+section[data-testid="stSidebar"] .stButton > button {
+    background: rgba(255, 255, 255, 0.06) !important;
     color: #CBD5E1 !important;
-    padding: 1rem 0.8rem !important;
-    margin: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
-    box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0.5rem !important;
-}
-
-/* Greeting line under the brand block */
-.nav-greeting {
-    color: #E2E8F0;
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 0.25rem 0 0.5rem;
-}
-.nav-greeting strong { color: #F1F5F9; font-weight: 600; }
-
-/* Spacer that pushes the logout block to the bottom of the side nav */
-.nav-spacer { flex: 1 0 auto; min-height: 1rem; }
-
-/* ── Sidebar collapse toggle ──────────────────────────────────
-   A Streamlit button rendered inside container key='swsa-sb-toggle'.
-   Default position: just to the right of the open sidebar. When the
-   sidebar is collapsed, additional Python-injected CSS slides this
-   to the far left. */
-.st-key-swsa-sb-toggle {
-    position: fixed !important;
-    top: 12px !important;
-    left: 268px !important;
-    z-index: 100000 !important;
-    width: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transition: left 0.2s ease !important;
-}
-.st-key-swsa-sb-toggle [data-testid="stButton"],
-.st-key-swsa-sb-toggle > div {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: auto !important;
-}
-.st-key-swsa-sb-toggle button {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
     border-radius: 9px !important;
-    background: #ffffff !important;
-    color: #1B2A3D !important;
-    border: 1px solid rgba(15, 23, 42, 0.15) !important;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18) !important;
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    padding: 0 !important;
-    line-height: 1 !important;
-    cursor: pointer !important;
-    -webkit-tap-highlight-color: transparent !important;
-}
-.st-key-swsa-sb-toggle button:hover {
-    background: #F8FAFC !important;
-    transform: translateY(-1px) !important;
-    transition: transform 0.15s ease, background 0.15s ease !important;
-}
-@media (prefers-color-scheme: dark) {
-    .st-key-swsa-sb-toggle button {
-        background: #1E293B !important;
-        color: #F1F5F9 !important;
-        border-color: rgba(255, 255, 255, 0.10) !important;
-    }
-    .st-key-swsa-sb-toggle button:hover {
-        background: #334155 !important;
-    }
-}
-@media (max-width: 767px) {
-    .st-key-swsa-sb-toggle {
-        left: 228px !important;
-    }
-}
-
-/* Brand block — vertical row of letters fits the narrow column */
-.navbar-brand {
-    display: inline-flex;
-    gap: 5px;
-    align-items: center;
-    padding: 0.25rem 0 0.5rem;
-    justify-content: center;
-    width: 100%;
-}
-.navbar-brand-letter {
-    width: 36px; height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9px;
-    font-weight: 800;
-    font-size: 1.05rem;
-    color: #fff;
-    letter-spacing: -0.5px;
-}
-.navbar-brand-letter.l1 { background: linear-gradient(145deg, #2D6A4F, #52B788); }
-.navbar-brand-letter.l2 { background: linear-gradient(145deg, #1565C0, #42A5F5); }
-.navbar-brand-letter.l3 { background: linear-gradient(145deg, #7B1FA2, #BA68C8); }
-.navbar-brand-letter.l4 { background: linear-gradient(145deg, #E65100, #FF9800); }
-
-/* Buttons inside the side nav — left-aligned text, dark theme */
-.st-key-swsa-navbar .stButton > button,
-.st-key-swsa-navbar .stPopover > div > button {
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: #CBD5E1 !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    font-weight: 500 !important;
     text-align: left !important;
     justify-content: flex-start !important;
-    height: auto !important;
-    min-height: 40px !important;
-    padding: 0.55rem 0.8rem !important;
-    font-size: 0.88rem !important;
-    border-radius: 9px !important;
-    white-space: nowrap !important;
-    width: 100% !important;
-    transition: all 0.18s ease !important;
 }
-.st-key-swsa-navbar .stButton > button:hover,
-.st-key-swsa-navbar .stPopover > div > button:hover {
+section[data-testid="stSidebar"] .stButton > button:hover {
     background: rgba(255, 255, 255, 0.12) !important;
     border-color: rgba(255, 255, 255, 0.18) !important;
     color: #F1F5F9 !important;
 }
-.st-key-swsa-navbar .stButton > button[kind="primary"],
-.st-key-swsa-navbar .stButton > button:disabled {
+section[data-testid="stSidebar"] .stButton > button[kind="primary"],
+section[data-testid="stSidebar"] .stButton > button:disabled {
     background: linear-gradient(135deg, #2D6A4F, #52B788) !important;
     color: #ffffff !important;
     border: none !important;
     opacity: 1 !important;
-}
-
-/* Popover content sits over content — let it breathe */
-.st-key-swsa-navbar [data-testid="stPopover"] {
-    width: 100% !important;
-}
-
-/* Push the main page content to the right of the side nav (desktop) */
-@media (min-width: 768px) {
-    .stMainBlockContainer,
-    section.main > div,
-    .block-container {
-        padding-left: 280px !important;
-    }
 }
 
 /* ── Sub-nav for chat mode (conversations dropdown + new chat) ── */
@@ -275,28 +132,6 @@ button[kind="header"],
     padding: 0.5rem 0 !important;
 }
 .st-key-swsa-chat-subnav [data-testid="stSelectbox"] label { display: none; }
-
-/* ── Mobile: side nav becomes a thinner strip; main content shifts
-       less aggressively so there's still room for chat content. */
-@media (max-width: 767px) {
-    .st-key-swsa-navbar {
-        width: 220px !important;
-        padding: 0.6rem 0.5rem !important;
-    }
-    .navbar-brand-letter { width: 28px; height: 28px; font-size: 0.85rem; }
-    .st-key-swsa-navbar .stButton > button,
-    .st-key-swsa-navbar .stPopover > div > button {
-        font-size: 0.78rem !important;
-        padding: 0.45rem 0.6rem !important;
-        min-height: 36px !important;
-    }
-    .stMainBlockContainer,
-    section.main > div,
-    .block-container {
-        padding-left: 230px !important;
-        padding-right: 0.5rem !important;
-    }
-}
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
    Don't fight Streamlit's native mobile sidebar — it already
@@ -1096,7 +931,8 @@ def _load_conversation(conversation_id: int) -> None:
 
 
 #  SIDEBAR — clean nav-style layout
-#  SIDE NAV (no nested columns — items render sequentially top-to-bottom)
+#  SIDEBAR — Streamlit'''s native sidebar. The chevron at the top
+#  collapses / expands it; we don'''t override that behaviour.
 _user = st.session_state.user
 _display_name = _user.full_name or _user.username
 _mode = st.session_state.mode
@@ -1104,68 +940,38 @@ _mode = st.session_state.mode
 from db.settings import is_feature_enabled  # noqa: E402
 from db.emergency import list_contacts as _list_emergency  # noqa: E402
 
-# Sidebar collapse state — toggled by the floating button below.
-if "sb_collapsed" not in st.session_state:
-    st.session_state.sb_collapsed = False
-
-# When collapsed, inject CSS that hides the side nav and lets the
-# main content reclaim the full width. The toggle button itself is
-# also slid to the far left.
-if st.session_state.sb_collapsed:
+with st.sidebar:
     st.markdown(
         """
-        <style>
-        .st-key-swsa-navbar { display: none !important; }
-        .stMainBlockContainer,
-        section.main > div,
-        .block-container {
-            padding-left: 0.8rem !important;
-            max-width: 100% !important;
-        }
-        .st-key-swsa-sb-toggle { left: 12px !important; }
-        @media (max-width: 767px) {
-            .st-key-swsa-sb-toggle { left: 12px !important; }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# Floating toggle button — always rendered, position controlled by CSS.
-with st.container(key="swsa-sb-toggle"):
-    _toggle_icon = "☰" if st.session_state.sb_collapsed else "✕"
-    _toggle_help = (
-        "Open sidebar" if st.session_state.sb_collapsed else "Close sidebar"
-    )
-    if st.button(
-        _toggle_icon,
-        key="sb_toggle_btn",
-        help=_toggle_help,
-    ):
-        st.session_state.sb_collapsed = not st.session_state.sb_collapsed
-        st.rerun()
-
-with st.container(key="swsa-navbar"):
-    # Brand
-    st.markdown(
-        """
-        <div class="navbar-brand">
-            <span class="navbar-brand-letter l1">S</span>
-            <span class="navbar-brand-letter l2">W</span>
-            <span class="navbar-brand-letter l3">S</span>
-            <span class="navbar-brand-letter l4">A</span>
+        <div style="display:inline-flex;gap:5px;align-items:center;
+                    padding:0.4rem 0 0.6rem;justify-content:center;width:100%;">
+            <span style="width:36px;height:36px;border-radius:9px;
+                background:linear-gradient(145deg,#2D6A4F,#52B788);
+                display:inline-flex;align-items:center;justify-content:center;
+                color:#fff;font-weight:800;font-size:1.05rem;">S</span>
+            <span style="width:36px;height:36px;border-radius:9px;
+                background:linear-gradient(145deg,#1565C0,#42A5F5);
+                display:inline-flex;align-items:center;justify-content:center;
+                color:#fff;font-weight:800;font-size:1.05rem;">W</span>
+            <span style="width:36px;height:36px;border-radius:9px;
+                background:linear-gradient(145deg,#7B1FA2,#BA68C8);
+                display:inline-flex;align-items:center;justify-content:center;
+                color:#fff;font-weight:800;font-size:1.05rem;">S</span>
+            <span style="width:36px;height:36px;border-radius:9px;
+                background:linear-gradient(145deg,#E65100,#FF9800);
+                display:inline-flex;align-items:center;justify-content:center;
+                color:#fff;font-weight:800;font-size:1.05rem;">A</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Greeting
     st.markdown(
-        f"<div class='nav-greeting'>👋 Hi, <strong>{_display_name}</strong></div>",
+        f"<div style='text-align:center;padding-bottom:0.5rem;font-size:0.88rem;'>"
+        f"👋 Hi, <strong>{_display_name}</strong></div>",
         unsafe_allow_html=True,
     )
 
-    # Nav links — sequential st.buttons, no column nesting at all.
     _items: list[tuple[str, str, str]] = [("chat", "💬", "Chat")]
     if is_feature_enabled("study_tools"):
         _items.append(("study", "📚", "Study Tools"))
@@ -1186,12 +992,8 @@ with st.container(key="swsa-navbar"):
             st.session_state.mode = _target_mode
             st.rerun()
 
-    # Spacer that pushes the user/logout block to the bottom of the panel
-    st.markdown(
-        "<div class='nav-spacer'></div>", unsafe_allow_html=True
-    )
+    st.markdown("---")
 
-    # Emergency contacts (always available)
     with st.expander("🚨 Emergency contacts"):
         _contacts = _list_emergency(active_only=True)
         if _contacts:
@@ -1203,29 +1005,16 @@ with st.container(key="swsa-navbar"):
         else:
             st.caption("No emergency contacts configured.")
 
-    # Logout
-    if st.button(
-        "🚪 Log out",
-        key="logout_btn",
-        use_container_width=True,
-    ):
+    if st.button("🚪 Log out", key="logout_btn", use_container_width=True):
         delete_session(_session_token)
         try:
             cookies.delete(SESSION_COOKIE_NAME)
         except Exception:
             pass
         for _k in (
-            "user",
-            "agent",
-            "messages",
-            "started",
-            "mood",
-            "interaction_count",
-            "categories_helped",
-            "feedback_given",
-            "conversation_id",
-            "mode",
-            "study",
+            "user", "agent", "messages", "started", "mood",
+            "interaction_count", "categories_helped", "feedback_given",
+            "conversation_id", "mode", "study", "sb_collapsed",
         ):
             st.session_state.pop(_k, None)
         st.rerun()
