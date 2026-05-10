@@ -114,9 +114,11 @@ section[data-testid="stSidebar"] {
     }
 }
 
-/* Floating "open sidebar" link, only rendered (by Python) when the
-   sidebar is collapsed. Styled here so the link is a real button. */
-a#swsa-sb-open-link {
+/* Universal sidebar toggle — ALWAYS visible at top-left, on every page,
+   regardless of sidebar state. Icon + href flip between '☰ open' and
+   '× close' based on st.session_state.sb_collapsed. z-index high
+   enough to sit above the sidebar itself when expanded. */
+a#swsa-sb-toggle {
     position: fixed !important;
     top: 12px !important;
     left: 12px !important;
@@ -139,18 +141,18 @@ a#swsa-sb-open-link {
     cursor: pointer !important;
     -webkit-tap-highlight-color: transparent !important;
 }
-a#swsa-sb-open-link:hover {
+a#swsa-sb-toggle:hover {
     background: #F8FAFC !important;
     transform: translateY(-1px);
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease;
 }
 @media (prefers-color-scheme: dark) {
-    a#swsa-sb-open-link {
+    a#swsa-sb-toggle {
         background: #1E293B !important;
         color: #E2E8F0 !important;
         border-color: rgba(255, 255, 255, 0.12) !important;
     }
-    a#swsa-sb-open-link:hover { background: #334155 !important; }
+    a#swsa-sb-toggle:hover { background: #334155 !important; }
 }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
@@ -735,6 +737,7 @@ elif _qp_sb == "hide":
         pass
     st.rerun()
 
+# Conditionally hide the sidebar via CSS injection
 if st.session_state.sb_collapsed:
     st.markdown(
         """
@@ -748,12 +751,22 @@ if st.session_state.sb_collapsed:
             }
         }
         </style>
-        <a id="swsa-sb-open-link" href="?sb=show"
-           title="Open sidebar" aria-label="Open sidebar"
-           target="_self">&#9776;</a>
         """,
         unsafe_allow_html=True,
     )
+
+# ALWAYS render the toggle — icon + href flip based on state. This way
+# users always see a way to open/close the sidebar, regardless of
+# whether sb_collapsed defaulted to False or was set previously.
+_sb_href = "?sb=show" if st.session_state.sb_collapsed else "?sb=hide"
+_sb_icon = "&#9776;" if st.session_state.sb_collapsed else "&times;"
+_sb_label = "Open sidebar" if st.session_state.sb_collapsed else "Close sidebar"
+st.markdown(
+    f'<a id="swsa-sb-toggle" href="{_sb_href}" '
+    f'title="{_sb_label}" aria-label="{_sb_label}" target="_self">'
+    f'{_sb_icon}</a>',
+    unsafe_allow_html=True,
+)
 
 
 #  DATABASE — bootstrap schema once per process
@@ -994,16 +1007,6 @@ def _load_conversation(conversation_id: int) -> None:
 
 #  SIDEBAR — clean nav-style layout
 with st.sidebar:
-    # ── Close-sidebar button ────────────────────────────────
-    if st.button(
-        "× Close sidebar",
-        key="sb_close_btn",
-        use_container_width=True,
-        help="Hide the sidebar — bring it back via the floating ☰ button.",
-    ):
-        st.session_state.sb_collapsed = True
-        st.rerun()
-
     # ── Brand ───────────────────────────────────────────────
     st.markdown(
         """
