@@ -693,10 +693,13 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
-#  SCROLL-TO-TOP — applies to every render so users land at the top
-#  rather than wherever the previous page left them. The component
-#  iframe is forced to a true 0x0 invisible box (height=0, width=0,
-#  inline body styles) so it never visibly flashes during loading.
+#  SCROLL-TO-TOP + MOBILE FLOATING SIDEBAR TOGGLE — both delivered as a
+#  single zero-height iframe. The script:
+#    1. Scrolls the parent window to the top on every render.
+#    2. Injects a floating ☰ button into the parent document that's
+#       only visible on mobile (< 768px) when the sidebar is closed.
+#       Tapping it triggers Streamlit's own toggle (or, as a hard
+#       fallback, slides the sidebar in directly).
 components.html(
     """<!doctype html><html><head><style>
 html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;background:transparent;}
@@ -706,6 +709,8 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
   try {
     var win = window.parent || window;
     var doc = win.document;
+
+    /* ───── 1. Scroll to top ───── */
     var scroller = doc.scrollingElement || doc.documentElement || doc.body;
     var go = function() {
       try { win.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
@@ -716,6 +721,105 @@ html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;backgroun
     go();
     setTimeout(go, 80);
     setTimeout(go, 250);
+
+    /* ───── 2. Floating sidebar toggle (mobile) ───── */
+    var BTN_ID = 'swsa-mobile-toggle';
+    function ensureBtn() {
+      if (doc.getElementById(BTN_ID)) return doc.getElementById(BTN_ID);
+      var btn = doc.createElement('button');
+      btn.id = BTN_ID;
+      btn.setAttribute('aria-label', 'Open sidebar');
+      btn.innerHTML = '<span style="display:inline-block;line-height:1">&#9776;</span>';
+      btn.style.cssText = [
+        'position:fixed',
+        'top:12px',
+        'left:12px',
+        'z-index:100000',
+        'width:44px',
+        'height:44px',
+        'border-radius:10px',
+        'background:#ffffff',
+        'border:1px solid rgba(15,23,42,0.12)',
+        'color:#1B2A3D',
+        'font-size:22px',
+        'font-weight:600',
+        'cursor:pointer',
+        'box-shadow:0 4px 14px rgba(15,23,42,0.20)',
+        'display:none',
+        'align-items:center',
+        'justify-content:center',
+        'padding:0',
+        'font-family:system-ui,-apple-system,sans-serif'
+      ].join(';');
+      // Dark-mode tweak via prefers-color-scheme
+      if (win.matchMedia && win.matchMedia('(prefers-color-scheme: dark)').matches) {
+        btn.style.background = '#1E293B';
+        btn.style.color = '#E2E8F0';
+        btn.style.borderColor = 'rgba(255,255,255,0.10)';
+      }
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var nativeToggle = doc.querySelector('[data-testid="stSidebarCollapseButton"]')
+                       || doc.querySelector('[data-testid="collapsedControl"]')
+                       || doc.querySelector('[data-testid="stSidebarCollapsedControl"]')
+                       || doc.querySelector('[data-testid="baseButton-headerNoPadding"]')
+                       || doc.querySelector('header[data-testid="stHeader"] button');
+        if (nativeToggle) {
+          nativeToggle.click();
+          return;
+        }
+        // Hard fallback: directly slide the sidebar in
+        var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+        if (sidebar) {
+          sidebar.style.transform = 'translateX(0)';
+          sidebar.style.visibility = 'visible';
+          sidebar.setAttribute('aria-expanded', 'true');
+        }
+      });
+      doc.body.appendChild(btn);
+      return btn;
+    }
+
+    function isSidebarClosed() {
+      var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+      if (!sidebar) return false;
+      // Various ways Streamlit might mark a closed sidebar
+      if (sidebar.getAttribute('aria-expanded') === 'false') return true;
+      var rect = sidebar.getBoundingClientRect();
+      if (rect.right <= 0) return true;          // off-screen left
+      if (rect.width < 5) return true;           // collapsed to nothing
+      var t = (sidebar.style.transform || getComputedStyle(sidebar).transform || '');
+      if (t.indexOf('-100%') >= 0) return true;
+      if (t.indexOf('matrix') >= 0 && t.indexOf('-') >= 0) return true;
+      return false;
+    }
+
+    function updateBtn() {
+      var btn = ensureBtn();
+      var mobile = win.innerWidth < 768;
+      if (!mobile) { btn.style.display = 'none'; return; }
+      btn.style.display = isSidebarClosed() ? 'inline-flex' : 'none';
+    }
+
+    updateBtn();
+    setTimeout(updateBtn, 200);
+    setTimeout(updateBtn, 600);
+
+    if (!win._swsaToggleListenersAttached) {
+      win._swsaToggleListenersAttached = true;
+      win.addEventListener('resize', updateBtn);
+      try {
+        var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+        if (sidebar && win.MutationObserver) {
+          var mo = new win.MutationObserver(updateBtn);
+          mo.observe(sidebar, {attributes:true, attributeFilter:['aria-expanded','style','class']});
+        }
+      } catch(e) {}
+      // Polling fallback for browsers / Streamlit versions where the
+      // mutation observer doesn't catch the toggle.
+      setInterval(updateBtn, 700);
+    }
   } catch(e) {}
 })();
 </script>
