@@ -128,19 +128,17 @@ button[kind="header"],
     gap: 0.5rem !important;
 }
 
-/* Force every horizontal row inside the navbar to stack vertically */
-.st-key-swsa-navbar [data-testid="stHorizontalBlock"],
-.st-key-swsa-navbar [data-testid="stColumn"] > div {
-    flex-direction: column !important;
-    gap: 0.4rem !important;
-    align-items: stretch !important;
-    width: 100% !important;
+/* Greeting line under the brand block */
+.nav-greeting {
+    color: #E2E8F0;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.25rem 0 0.5rem;
 }
-.st-key-swsa-navbar [data-testid="stColumn"] {
-    width: 100% !important;
-    min-width: 100% !important;
-    flex: 1 1 100% !important;
-}
+.nav-greeting strong { color: #F1F5F9; font-weight: 600; }
+
+/* Spacer that pushes the logout block to the bottom of the side nav */
+.nav-spacer { flex: 1 0 auto; min-height: 1rem; }
 
 /* Brand block — vertical row of letters fits the narrow column */
 .navbar-brand {
@@ -1039,7 +1037,7 @@ def _load_conversation(conversation_id: int) -> None:
 
 
 #  SIDEBAR — clean nav-style layout
-#  TOP NAV BAR (replaces the old left sidebar)
+#  SIDE NAV (no nested columns — items render sequentially top-to-bottom)
 _user = st.session_state.user
 _display_name = _user.full_name or _user.username
 _mode = st.session_state.mode
@@ -1048,100 +1046,94 @@ from db.settings import is_feature_enabled  # noqa: E402
 from db.emergency import list_contacts as _list_emergency  # noqa: E402
 
 with st.container(key="swsa-navbar"):
-    nav_brand, nav_links, nav_actions = st.columns([2, 7, 3])
+    # Brand
+    st.markdown(
+        """
+        <div class="navbar-brand">
+            <span class="navbar-brand-letter l1">S</span>
+            <span class="navbar-brand-letter l2">W</span>
+            <span class="navbar-brand-letter l3">S</span>
+            <span class="navbar-brand-letter l4">A</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with nav_brand:
-        st.markdown(
-            """
-            <div class="navbar-brand">
-                <span class="navbar-brand-letter l1">S</span>
-                <span class="navbar-brand-letter l2">W</span>
-                <span class="navbar-brand-letter l3">S</span>
-                <span class="navbar-brand-letter l4">A</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # Greeting
+    st.markdown(
+        f"<div class='nav-greeting'>👋 Hi, <strong>{_display_name}</strong></div>",
+        unsafe_allow_html=True,
+    )
 
-    with nav_links:
-        # Build the visible-link list dynamically based on feature flags +
-        # admin status, then render with equal-width columns.
-        _items: list[tuple[str, str, str]] = [("chat", "💬", "Chat")]
-        if is_feature_enabled("study_tools"):
-            _items.append(("study", "📚", "Study"))
-        if is_feature_enabled("community"):
-            _items.append(("community", "🌐", "Community"))
-        _items.append(("settings", "⚙️", "Account"))
-        if is_admin(_user):
-            _items.append(("admin", "🛠️", "Admin"))
+    # Nav links — sequential st.buttons, no column nesting at all.
+    _items: list[tuple[str, str, str]] = [("chat", "💬", "Chat")]
+    if is_feature_enabled("study_tools"):
+        _items.append(("study", "📚", "Study Tools"))
+    if is_feature_enabled("community"):
+        _items.append(("community", "🌐", "Community"))
+    _items.append(("settings", "⚙️", "Account"))
+    if is_admin(_user):
+        _items.append(("admin", "🛠️", "Admin"))
 
-        _link_cols = st.columns(len(_items))
-        for _i, (_target_mode, _icon, _label) in enumerate(_items):
-            with _link_cols[_i]:
-                if st.button(
-                    f"{_icon} {_label}",
-                    use_container_width=True,
-                    type="primary" if _mode == _target_mode else "secondary",
-                    key=f"nav_link_{_target_mode}",
-                    disabled=_mode == _target_mode,
-                ):
-                    st.session_state.mode = _target_mode
-                    st.rerun()
+    for _target_mode, _icon, _label in _items:
+        if st.button(
+            f"{_icon}  {_label}",
+            use_container_width=True,
+            type="primary" if _mode == _target_mode else "secondary",
+            key=f"nav_link_{_target_mode}",
+            disabled=_mode == _target_mode,
+        ):
+            st.session_state.mode = _target_mode
+            st.rerun()
 
-    with nav_actions:
-        _act_cols = st.columns(2)
-        with _act_cols[0]:
-            with st.popover(
-                f"👤 {_display_name[:14]}",
-                use_container_width=True,
-            ):
-                st.markdown(
-                    f"**{_display_name}**  \n`@{_user.username}`",
-                    unsafe_allow_html=True,
+    # Spacer that pushes the user/logout block to the bottom of the panel
+    st.markdown(
+        "<div class='nav-spacer'></div>", unsafe_allow_html=True
+    )
+
+    # Emergency contacts (always available)
+    with st.expander("🚨 Emergency contacts"):
+        _contacts = _list_emergency(active_only=True)
+        if _contacts:
+            st.markdown(
+                "  \n".join(
+                    f"**{c['label']}** — {c['value']}" for c in _contacts
                 )
-                st.markdown("---")
-                with st.expander("🚨 Emergency contacts"):
-                    _contacts = _list_emergency(active_only=True)
-                    if _contacts:
-                        st.markdown(
-                            "  \n".join(
-                                f"**{c['label']}** — {c['value']}"
-                                for c in _contacts
-                            )
-                        )
-                    else:
-                        st.caption("No emergency contacts configured.")
-                st.caption(
-                    "⚠️ S.W.S.A. provides guidance only — not a substitute "
-                    "for professional help. In emergencies call 999."
-                )
-        with _act_cols[1]:
-            if st.button(
-                "🚪 Log out",
-                key="logout_btn",
-                use_container_width=True,
-                type="secondary",
-            ):
-                delete_session(_session_token)
-                try:
-                    cookies.delete(SESSION_COOKIE_NAME)
-                except Exception:
-                    pass
-                for _k in (
-                    "user",
-                    "agent",
-                    "messages",
-                    "started",
-                    "mood",
-                    "interaction_count",
-                    "categories_helped",
-                    "feedback_given",
-                    "conversation_id",
-                    "mode",
-                    "study",
-                ):
-                    st.session_state.pop(_k, None)
-                st.rerun()
+            )
+        else:
+            st.caption("No emergency contacts configured.")
+
+    # Logout
+    if st.button(
+        "🚪 Log out",
+        key="logout_btn",
+        use_container_width=True,
+    ):
+        delete_session(_session_token)
+        try:
+            cookies.delete(SESSION_COOKIE_NAME)
+        except Exception:
+            pass
+        for _k in (
+            "user",
+            "agent",
+            "messages",
+            "started",
+            "mood",
+            "interaction_count",
+            "categories_helped",
+            "feedback_given",
+            "conversation_id",
+            "mode",
+            "study",
+        ):
+            st.session_state.pop(_k, None)
+        st.rerun()
+
+    st.caption(
+        "⚠️ Guidance only — not a substitute for professional help. "
+        "In emergencies call 999."
+    )
 
 #  CHAT-MODE SUB-NAV: + New chat button + Conversations dropdown
 if _mode == "chat":
