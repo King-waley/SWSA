@@ -115,12 +115,10 @@ header[data-testid="stHeader"] {
     }
 }
 
-/* Force the native sidebar chevron to be reliably visible + clickable */
+/* Force the in-sidebar chevron (when sidebar is OPEN) to be visible */
 button[kind="header"],
 button[kind="headerNoPadding"],
 [data-testid="stSidebarCollapseButton"],
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"],
 [data-testid="baseButton-headerNoPadding"] {
     display: inline-flex !important;
     visibility: visible !important;
@@ -134,16 +132,60 @@ button[kind="headerNoPadding"],
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10) !important;
     z-index: 9999 !important;
 }
+
+/* CRITICAL: the "open me back" button that appears when the sidebar
+   is COLLAPSED. Different element from the close chevron. Pin it
+   floating top-left as a big white pill so users can always find it. */
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+section[data-testid="stSidebar"][aria-expanded="false"] ~ div [data-testid="collapsedControl"] {
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 100000 !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    min-height: 46px !important;
+    background: #ffffff !important;
+    color: #1B2A3D !important;
+    border: 1.5px solid rgba(15, 23, 42, 0.18) !important;
+    border-radius: 10px !important;
+    padding: 6px !important;
+    margin: 0 !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.22) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+}
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="collapsedControl"] button {
+    background: transparent !important;
+    color: #1B2A3D !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
 @media (prefers-color-scheme: dark) {
     button[kind="header"],
     button[kind="headerNoPadding"],
     [data-testid="stSidebarCollapseButton"],
+    [data-testid="baseButton-headerNoPadding"],
     [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"],
-    [data-testid="baseButton-headerNoPadding"] {
+    [data-testid="collapsedControl"] {
         background: #1E293B !important;
         color: #F1F5F9 !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="collapsedControl"] button {
+        color: #F1F5F9 !important;
     }
 }
 
