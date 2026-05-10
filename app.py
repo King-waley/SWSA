@@ -719,28 +719,47 @@ div[data-testid="stChatInput"] textarea {
 """, unsafe_allow_html=True)
 
 
-#  SCROLL-TO-TOP — invisible iframe whose body content is forced to 0×0
+#  AUTO-SCROLL — top on page navigation, bottom on new chat messages.
+#  Decision is server-side based on st.session_state diff: if we're in
+#  chat mode and the message list grew since the last render, scroll
+#  to the bottom of the page (where the new reply is). Otherwise top.
+_msg_count = len(st.session_state.get("messages", []))
+_prev_msg_count = st.session_state.get("_prev_msg_count", _msg_count)
+_should_scroll_bottom = (
+    st.session_state.get("mode") == "chat" and _msg_count > _prev_msg_count
+)
+st.session_state._prev_msg_count = _msg_count
+
 components.html(
-    """<!doctype html><html><head><style>
-html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;background:transparent;}
+    f"""<!doctype html><html><head><style>
+html,body{{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;background:transparent;}}
 </style></head><body>
 <script>
-(function() {
-  try {
+(function() {{
+  try {{
     var win = window.parent || window;
     var doc = win.document;
     var scroller = doc.scrollingElement || doc.documentElement || doc.body;
-    var go = function() {
-      try { win.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
-      if (scroller && typeof scroller.scrollTo === 'function') {
-        try { scroller.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
-      }
-    };
+    var toBottom = {str(_should_scroll_bottom).lower()};
+    var go = function() {{
+      var top = toBottom ? (scroller.scrollHeight || 999999) : 0;
+      try {{ win.scrollTo({{top: top, left: 0, behavior: 'instant'}}); }} catch(e) {{}}
+      if (scroller && typeof scroller.scrollTo === 'function') {{
+        try {{ scroller.scrollTo({{top: top, left: 0, behavior: 'instant'}}); }} catch(e) {{}}
+      }}
+    }};
     go();
     setTimeout(go, 80);
     setTimeout(go, 250);
-  } catch(e) {}
-})();
+    /* Streamed assistant replies grow the page over the next ~second,
+       so re-scroll-to-bottom a couple more times to follow the text. */
+    if (toBottom) {{
+      setTimeout(go, 600);
+      setTimeout(go, 1200);
+      setTimeout(go, 2000);
+    }}
+  }} catch(e) {{}}
+}})();
 </script>
 </body></html>""",
     height=0,
