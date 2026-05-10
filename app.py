@@ -140,6 +140,65 @@ button[kind="header"],
 /* Spacer that pushes the logout block to the bottom of the side nav */
 .nav-spacer { flex: 1 0 auto; min-height: 1rem; }
 
+/* ── Sidebar collapse toggle ──────────────────────────────────
+   A Streamlit button rendered inside container key='swsa-sb-toggle'.
+   Default position: just to the right of the open sidebar. When the
+   sidebar is collapsed, additional Python-injected CSS slides this
+   to the far left. */
+.st-key-swsa-sb-toggle {
+    position: fixed !important;
+    top: 12px !important;
+    left: 268px !important;
+    z-index: 100000 !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transition: left 0.2s ease !important;
+}
+.st-key-swsa-sb-toggle [data-testid="stButton"],
+.st-key-swsa-sb-toggle > div {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+}
+.st-key-swsa-sb-toggle button {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 9px !important;
+    background: #ffffff !important;
+    color: #1B2A3D !important;
+    border: 1px solid rgba(15, 23, 42, 0.15) !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+.st-key-swsa-sb-toggle button:hover {
+    background: #F8FAFC !important;
+    transform: translateY(-1px) !important;
+    transition: transform 0.15s ease, background 0.15s ease !important;
+}
+@media (prefers-color-scheme: dark) {
+    .st-key-swsa-sb-toggle button {
+        background: #1E293B !important;
+        color: #F1F5F9 !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+    }
+    .st-key-swsa-sb-toggle button:hover {
+        background: #334155 !important;
+    }
+}
+@media (max-width: 767px) {
+    .st-key-swsa-sb-toggle {
+        left: 228px !important;
+    }
+}
+
 /* Brand block — vertical row of letters fits the narrow column */
 .navbar-brand {
     display: inline-flex;
@@ -1044,6 +1103,47 @@ _mode = st.session_state.mode
 
 from db.settings import is_feature_enabled  # noqa: E402
 from db.emergency import list_contacts as _list_emergency  # noqa: E402
+
+# Sidebar collapse state — toggled by the floating button below.
+if "sb_collapsed" not in st.session_state:
+    st.session_state.sb_collapsed = False
+
+# When collapsed, inject CSS that hides the side nav and lets the
+# main content reclaim the full width. The toggle button itself is
+# also slid to the far left.
+if st.session_state.sb_collapsed:
+    st.markdown(
+        """
+        <style>
+        .st-key-swsa-navbar { display: none !important; }
+        .stMainBlockContainer,
+        section.main > div,
+        .block-container {
+            padding-left: 0.8rem !important;
+            max-width: 100% !important;
+        }
+        .st-key-swsa-sb-toggle { left: 12px !important; }
+        @media (max-width: 767px) {
+            .st-key-swsa-sb-toggle { left: 12px !important; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Floating toggle button — always rendered, position controlled by CSS.
+with st.container(key="swsa-sb-toggle"):
+    _toggle_icon = "☰" if st.session_state.sb_collapsed else "✕"
+    _toggle_help = (
+        "Open sidebar" if st.session_state.sb_collapsed else "Close sidebar"
+    )
+    if st.button(
+        _toggle_icon,
+        key="sb_toggle_btn",
+        help=_toggle_help,
+    ):
+        st.session_state.sb_collapsed = not st.session_state.sb_collapsed
+        st.rerun()
 
 with st.container(key="swsa-navbar"):
     # Brand
