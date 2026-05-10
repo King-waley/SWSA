@@ -112,90 +112,58 @@ header[data-testid="stHeader"] {
     }
 }
 
-/* ── Mobile (< 768px): proper drawer behaviour ─────────────────
-   Sidebar is a slide-in overlay, not pushed alongside content.
-   Chevron / hamburger toggle is always visible top-left over content.
-*/
+/* ── Mobile (< 768px) ──────────────────────────────────────────
+   Don't fight Streamlit's native mobile sidebar — it already
+   works as a slide-in drawer. We only need to make the toggle
+   button visible (the rest of our CSS makes the header transparent
+   which hides it) and shrink the hero a bit for small screens. */
 @media (max-width: 767px) {
-    /* Sidebar overlays content instead of pushing it */
-    section[data-testid="stSidebar"] {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        height: 100vh !important;
-        width: min(86vw, 320px) !important;
-        min-width: min(86vw, 320px) !important;
-        max-width: min(86vw, 320px) !important;
-        z-index: 9999 !important;
-        box-shadow: 4px 0 32px rgba(0,0,0,0.4) !important;
-        transition: transform 0.25s ease !important;
+    /* Give the header a subtle, blurred white bar on mobile so the
+       sidebar toggle inside it has visual contrast and is tappable.
+       Desktop keeps the transparent header.                          */
+    header[data-testid="stHeader"] {
+        background: rgba(255, 255, 255, 0.88) !important;
+        backdrop-filter: saturate(180%) blur(10px) !important;
+        -webkit-backdrop-filter: saturate(180%) blur(10px) !important;
+        height: auto !important;
+        min-height: 3rem !important;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+        z-index: 9000 !important;
     }
-    /* When Streamlit marks it collapsed, slide it off-screen */
-    section[data-testid="stSidebar"][aria-expanded="false"] {
-        transform: translateX(-100%) !important;
-    }
-    section[data-testid="stSidebar"][aria-expanded="true"] {
-        transform: translateX(0) !important;
-    }
-
-    /* Floating round toggle button — always visible top-left, above content */
+    /* Make Streamlit's native sidebar collapse / expand toggle
+       reliably visible. We don't change its position — Streamlit's
+       own JS handles open/close. We only override visibility + give
+       it a tap-target size. */
     button[kind="header"],
     [data-testid="stSidebarCollapseButton"],
     [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapsedControl"] {
-        position: fixed !important;
-        top: 10px !important;
-        left: 10px !important;
-        z-index: 10000 !important;
-        background: white !important;
-        color: #1B2A3D !important;
-        border: 1px solid rgba(15,23,42,0.08) !important;
-        border-radius: 10px !important;
-        padding: 8px 10px !important;
-        min-width: 40px !important;
-        min-height: 40px !important;
-        box-shadow: 0 4px 14px rgba(15,23,42,0.18) !important;
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="baseButton-headerNoPadding"] {
         display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
         visibility: visible !important;
         opacity: 1 !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        z-index: 9001 !important;
     }
 
-    /* Header is transparent + zero-height so it doesn't reserve space */
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-        height: 0 !important;
-        min-height: 0 !important;
-    }
-
-    /* Main content uses full screen width */
-    .block-container {
-        padding-left: 0.8rem !important;
-        padding-right: 0.8rem !important;
-        padding-top: 3rem !important; /* breathing room below floating toggle */
-    }
-
-    /* Hero shrinks on mobile */
+    /* Mobile typography tweaks (hero is huge by default) */
     .swsa-letter { width: 48px !important; height: 48px !important; font-size: 1.4rem !important; border-radius: 12px !important; }
     .swsa-full-name { font-size: 0.65rem !important; gap: 0.3rem !important; letter-spacing: 1.5px !important; }
     .swsa-tagline { font-size: 0.95rem !important; }
-
-    /* Glass cards / chat bubbles use less padding */
     .glass-card { padding: 1rem !important; border-radius: 14px !important; }
     div[data-testid="stChatMessage"] { padding: 0.8rem 1rem !important; }
+
+    /* Showcase hero typography fits a phone */
+    .sc-headline { font-size: 1.9rem !important; line-height: 1.1 !important; }
+    .sc-subhead { font-size: 0.95rem !important; }
+    .sc-section-h { font-size: 1.4rem !important; }
 }
 
-/* Mobile dark-mode tweaks for the toggle button */
 @media (max-width: 767px) and (prefers-color-scheme: dark) {
-    button[kind="header"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapsedControl"] {
-        background: #1E293B !important;
-        color: #E2E8F0 !important;
-        border-color: rgba(255,255,255,0.10) !important;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+    header[data-testid="stHeader"] {
+        background: rgba(15, 23, 42, 0.88) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
     }
 }
 
