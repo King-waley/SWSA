@@ -115,77 +115,41 @@ header[data-testid="stHeader"] {
     }
 }
 
-/* Force the in-sidebar chevron (when sidebar is OPEN) to be visible */
+/* Hide Streamlit's native sidebar chevron + collapsed-control entirely.
+   Our own Streamlit-button toggle (rendered in Python) is the only
+   way to hide / show the sidebar. */
 button[kind="header"],
 button[kind="headerNoPadding"],
 [data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
 [data-testid="baseButton-headerNoPadding"] {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Style the "Show sidebar" button when it's the only widget at top
+   of main area (when sidebar is hidden). */
+.st-key-swsa-show-sb-wrap button {
     background: #ffffff !important;
     color: #1B2A3D !important;
     border: 1px solid rgba(15, 23, 42, 0.14) !important;
     border-radius: 8px !important;
-    padding: 6px 10px !important;
-    margin: 0.35rem 0.4rem !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10) !important;
-    z-index: 9999 !important;
+    padding: 0.4rem 0.9rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    width: auto !important;
+    min-width: 130px !important;
 }
-
-/* CRITICAL: the "open me back" button that appears when the sidebar
-   is COLLAPSED. Different element from the close chevron. Pin it
-   floating top-left as a big white pill so users can always find it. */
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"],
-section[data-testid="stSidebar"][aria-expanded="false"] ~ div [data-testid="collapsedControl"] {
-    position: fixed !important;
-    top: 12px !important;
-    left: 12px !important;
-    z-index: 100000 !important;
-    width: 46px !important;
-    height: 46px !important;
-    min-width: 46px !important;
-    min-height: 46px !important;
-    background: #ffffff !important;
-    color: #1B2A3D !important;
-    border: 1.5px solid rgba(15, 23, 42, 0.18) !important;
-    border-radius: 10px !important;
-    padding: 6px !important;
-    margin: 0 !important;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.22) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    cursor: pointer !important;
+.st-key-swsa-show-sb-wrap button:hover {
+    background: #F8FAFC !important;
+    border-color: rgba(15, 23, 42, 0.22) !important;
 }
-[data-testid="stSidebarCollapsedControl"] button,
-[data-testid="collapsedControl"] button {
-    background: transparent !important;
-    color: #1B2A3D !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-}
-
 @media (prefers-color-scheme: dark) {
-    button[kind="header"],
-    button[kind="headerNoPadding"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="baseButton-headerNoPadding"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {
+    .st-key-swsa-show-sb-wrap button {
         background: #1E293B !important;
         color: #F1F5F9 !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button,
-    [data-testid="collapsedControl"] button {
-        color: #F1F5F9 !important;
     }
 }
 
@@ -1023,9 +987,9 @@ def _load_conversation(conversation_id: int) -> None:
     st.session_state.agent = new_agent
 
 
-#  SIDEBAR — clean nav-style layout
-#  SIDEBAR — Streamlit'''s native sidebar. The chevron at the top
-#  collapses / expands it; we don'''t override that behaviour.
+#  SIDEBAR — toggled by our own Streamlit buttons (Streamlit's
+#  native chevron is hidden via CSS because it was unreliable).
+#  State lives in st.session_state.sb_hidden.
 _user = st.session_state.user
 _display_name = _user.full_name or _user.username
 _mode = st.session_state.mode
@@ -1033,7 +997,40 @@ _mode = st.session_state.mode
 from db.settings import is_feature_enabled  # noqa: E402
 from db.emergency import list_contacts as _list_emergency  # noqa: E402
 
+if "sb_hidden" not in st.session_state:
+    st.session_state.sb_hidden = False
+
+# When hidden, force the native sidebar off-screen and render a
+# "☰ Show sidebar" button at the top of the main area.
+if st.session_state.sb_hidden:
+    st.markdown(
+        """
+        <style>
+        section[data-testid="stSidebar"] {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            min-width: 0 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.container(key="swsa-show-sb-wrap"):
+        if st.button("☰ Show sidebar", key="swsa_show_sb_btn"):
+            st.session_state.sb_hidden = False
+            st.rerun()
+
 with st.sidebar:
+    # Hide-sidebar button at the very top of the sidebar
+    if st.button(
+        "× Hide sidebar",
+        key="swsa_hide_sb_btn",
+        use_container_width=True,
+    ):
+        st.session_state.sb_hidden = True
+        st.rerun()
+
     st.markdown(
         """
         <div style="display:inline-flex;gap:5px;align-items:center;
