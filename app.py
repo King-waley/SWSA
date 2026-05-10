@@ -344,6 +344,27 @@ section[data-testid="stSidebar"] hr {
 }
 section[data-testid="stSidebar"] .stButton { margin-bottom: 0.3rem; }
 
+/* Make sure zero-size component iframes (used for scroll-to-top etc.)
+   never visibly flash. Streamlit normally wraps them in a full-width
+   block; force the wrapper to collapse too. */
+iframe[height="0"], iframe[width="0"] {
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+}
+div[data-testid="stIFrame"]:has(iframe[height="0"]),
+div.stCustomComponentV1:has(iframe[height="0"]) {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
 /* Hide Streamlit's "Press Enter to submit form" / "Press Enter to apply"
    helper text that auto-appears under text_inputs. Visual noise that
    nobody asked for. */
@@ -652,32 +673,34 @@ div[data-testid="stChatInput"] textarea {
 
 
 #  SCROLL-TO-TOP — applies to every render so users land at the top
-#  rather than wherever the previous page left them. Uses
-#  components.html (iframe) instead of a raw <img onerror> because
-#  React error #231 fires on inline event-handler strings since
-#  Streamlit 1.42+.
+#  rather than wherever the previous page left them. The component
+#  iframe is forced to a true 0x0 invisible box (height=0, width=0,
+#  inline body styles) so it never visibly flashes during loading.
 components.html(
-    """
-    <script>
-    (function() {
-        try {
-            var win = window.parent || window;
-            var doc = win.document;
-            var scroller = doc.scrollingElement || doc.documentElement || doc.body;
-            var go = function() {
-                try { win.scrollTo({top: 0, left: 0, behavior: 'instant'}); } catch(e) {}
-                if (scroller && typeof scroller.scrollTo === 'function') {
-                    try { scroller.scrollTo({top: 0, left: 0, behavior: 'instant'}); } catch(e) {}
-                }
-            };
-            go();
-            setTimeout(go, 80);
-            setTimeout(go, 250);
-        } catch(e) {}
-    })();
-    </script>
-    """,
+    """<!doctype html><html><head><style>
+html,body{margin:0;padding:0;height:0;width:0;border:0;overflow:hidden;background:transparent;}
+</style></head><body>
+<script>
+(function() {
+  try {
+    var win = window.parent || window;
+    var doc = win.document;
+    var scroller = doc.scrollingElement || doc.documentElement || doc.body;
+    var go = function() {
+      try { win.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
+      if (scroller && typeof scroller.scrollTo === 'function') {
+        try { scroller.scrollTo({top:0,left:0,behavior:'instant'}); } catch(e) {}
+      }
+    };
+    go();
+    setTimeout(go, 80);
+    setTimeout(go, 250);
+  } catch(e) {}
+})();
+</script>
+</body></html>""",
     height=0,
+    width=0,
 )
 
 
