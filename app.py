@@ -254,14 +254,45 @@ section[data-testid="stSidebar"] .stButton > button:disabled {
 .st-key-swsa-chat-subnav [data-testid="stSelectbox"] label { display: none; }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────
-   Don't fight Streamlit's native mobile sidebar — it already
-   works as a slide-in drawer. We only need to make the toggle
-   button visible (the rest of our CSS makes the header transparent
-   which hides it) and shrink the hero a bit for small screens. */
+   On mobile, Streamlit collapses the sidebar by default with a
+   transform; since we hide the native chevron, we need to force
+   the sidebar into a fixed drawer position when our `sb_hidden`
+   flag says it should be visible. */
 @media (max-width: 767px) {
-    /* Sidebar toggle is handled by our universal floating button —
-       no header bar / native-toggle CSS needed here. Just shrink the
-       hero typography so the page fits a phone. */
+    /* Force sidebar into a fixed-position slide-in drawer that
+       overlays the page content. translateX(0) overrides whatever
+       transform Streamlit applies on mobile by default. */
+    section[data-testid="stSidebar"] {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        height: 100vh !important;
+        width: 85vw !important;
+        max-width: 320px !important;
+        min-width: 0 !important;
+        transform: translateX(0) !important;
+        margin-left: 0 !important;
+        z-index: 1000 !important;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.32) !important;
+        overflow-y: auto !important;
+    }
+    /* Sidebar's inner positioning also has to be overridden */
+    section[data-testid="stSidebar"] > div {
+        transform: none !important;
+        height: 100vh !important;
+    }
+    /* The "Show sidebar" button should sit on top of everything,
+       fixed to top-left so it's always reachable on a phone. */
+    .st-key-swsa-show-sb-wrap {
+        position: fixed !important;
+        top: 0.6rem !important;
+        left: 0.6rem !important;
+        z-index: 1100 !important;
+        margin: 0 !important;
+    }
+
+    /* Shrink hero typography so the page fits a phone. */
     .swsa-letter { width: 48px !important; height: 48px !important; font-size: 1.4rem !important; border-radius: 12px !important; }
     .swsa-full-name { font-size: 0.65rem !important; gap: 0.3rem !important; letter-spacing: 1.5px !important; }
     .swsa-tagline { font-size: 0.95rem !important; }
