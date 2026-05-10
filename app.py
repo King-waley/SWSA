@@ -1127,20 +1127,29 @@ if is_running_on_railway() and not is_persistent_db():
 # in @st.cache_resource. The `key` argument handles dedup across reruns.
 cookies = stx.CookieManager(key="swsa_cookie_mgr")
 _session_token = cookies.get(SESSION_COOKIE_NAME)
+# get_all() returns None until the component has synced its cookies from
+# the browser. Once synced it returns a dict (possibly empty if no cookies
+# were set). This is the only reliable way to distinguish "cookies not
+# loaded yet" from "cookies loaded, no session set".
+_cookies_synced = cookies.get_all() is not None
 
 # extra-streamlit-components loads cookies asynchronously: on the very
 # first render after a page refresh (F5), .get(...) returns None even
 # if the cookie exists, then a few hundred ms later the component
 # triggers a rerun with the real value. Without bridging this gap the
 # user briefly sees the auth/showcase screen on every refresh — looks
-# like a forced logout. Show a branded splash instead and wait for the
-# next rerun, where cookies will be loaded.
+# like a forced logout. Loop the splash for up to ~3 seconds (15
+# attempts × 200ms) waiting for cookies to sync before falling through
+# to the auth screen.
+_COOKIE_MAX_ATTEMPTS = 15
+_cookie_attempts = st.session_state.get("_cookie_attempts", 0)
 if (
-    "user" not in st.session_state or st.session_state.user is None
-) and not _session_token and not st.session_state.get(
-    "_cookie_load_attempted", False
+    ("user" not in st.session_state or st.session_state.user is None)
+    and not _session_token
+    and not _cookies_synced
+    and _cookie_attempts < _COOKIE_MAX_ATTEMPTS
 ):
-    st.session_state._cookie_load_attempted = True
+    st.session_state._cookie_attempts = _cookie_attempts + 1
     st.markdown(
         """
         <div style="
@@ -1170,7 +1179,13 @@ if (
         """,
         unsafe_allow_html=True,
     )
-    st.stop()
+    # Sleep briefly to give the cookie component time to deliver its
+    # data, then explicitly rerun. We can't rely solely on the
+    # component triggering its own rerun — if the cookie is genuinely
+    # absent it may not.
+    import time as _t
+    _t.sleep(0.2)
+    st.rerun()
 
 # Now session_state.user might be None (no cookie OR cookie invalid).
 # If a cookie exists, restore the user from the DB.
